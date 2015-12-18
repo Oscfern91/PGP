@@ -1,0 +1,16 @@
+# Python ignored files
+*.pyc
+__pycache__
+
+# Eclipse configuration
+.project
+.pydevproject
+.classpath
+.settings/
+
+# Mac
+*.DS_Store
+
+# Other
+*~
+
