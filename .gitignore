@@ -1,6 +1,6 @@
 # Python ignored files
 *.pyc
-__pycache__
+*/__pycache__
 
 # Eclipse configuration
 .project
