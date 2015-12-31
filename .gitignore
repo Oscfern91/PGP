@@ -1,6 +1,10 @@
 # Python ignored files
 *.pyc
 */__pycache__
+*env/
+
+# Database files
+db.sqlite3
 
 # Eclipse configuration
 .project
