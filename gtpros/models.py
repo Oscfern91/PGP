@@ -2,7 +2,7 @@
 from django.db import models
 
 class Trabajador(models.Model):
-    dni = models.CharField(max_length=9, primary_key=True)
+    DNI = models.CharField(max_length=9, primary_key=True)
     nombre = models.CharField(max_length=20)
     apellidos = models.CharField(max_length=20)
     
@@ -35,7 +35,7 @@ class Categoria(models.Model):
 class Proyecto(models.Model):
     nombre = models.CharField(max_length=20)
     descripcion = models.TextField()
-    estado = models.BooleanField()
+    activo = models.BooleanField(default=True)
     
 class Resumen(models.Model):
     proyecto = models.ForeignKey('Proyecto')
