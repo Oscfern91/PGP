@@ -1,16 +1,42 @@
 # -*- encoding: utf-8 -*-
 from django.db import models
+from django.utils import timezone
+from django.core import validators
+from django.utils.translation import ugettext as _
+from pip.cmdoptions import editable
+from django.core.exceptions import ValidationError
 
 class Trabajador(models.Model):
-    DNI = models.CharField(max_length=9, primary_key=True)
-    nombre = models.CharField(max_length=20)
-    apellidos = models.CharField(max_length=20)
+    user = models.OneToOneField('auth.User', primary_key=True)
+    dni = models.CharField(max_length=9,
+       help_text=_('Required. 9 characters. Format: 71254631D.'),
+       validators=[
+           validators.RegexValidator(r'^\d{8}[A-Z]{1}$', _('Enter a valid DNI. Format: 71254631D.')
+             ),
+       ],
+    verbose_name='DNI', blank=True, null=True)
     
-class Categoria(models.Model):
+    JEFE = 'J'
+    DESARROLLADOR = 'D'
+    
+    CATEGORIA_OPCIONES = (
+        (JEFE, 'Jefe'),
+        (DESARROLLADOR, 'Desarrollador'),
+    )
+    
+    categoria = models.CharField(max_length=1, choices=CATEGORIA_OPCIONES)
+    
+    def __str__(self):
+            return self.user.username
+        
+    class Meta:
+        verbose_name_plural = "Trabajadores"
+    
+class Rol(models.Model):
     trabajador = models.ForeignKey('Trabajador')
-    proyecto = models.ForeignKey('Proyecto')
+    proyecto = models.ForeignKey('Proyecto', blank=True, null=True)
     
-    JEFE = 'JF'
+    JEFE_PROYECTO = 'JP'
     ANALISTA = 'AN'
     DISEÑADOR = 'DI'
     ANALISTA_PROG = 'AP'
@@ -18,8 +44,8 @@ class Categoria(models.Model):
     PROGRAMADOR = 'PR'
     PROBADOR = 'QA'
     
-    TIPO_OPCIONES = (
-        (JEFE, 'Jefe'),
+    ROL_OPCIONES = (
+        (JEFE_PROYECTO, 'Jefe de Proyecto'),
         (ANALISTA, 'Analista'),
         (DISEÑADOR, 'Diseñador'),
         (ANALISTA_PROG, 'Analista Programador'),
@@ -27,27 +53,77 @@ class Categoria(models.Model):
         (PROGRAMADOR, 'Programador'),
         (PROBADOR, 'Probador'),
     )
-    tipo = models.CharField(max_length=2, choices=TIPO_OPCIONES)
+    
+    tipo_rol = models.CharField(max_length=2, choices=ROL_OPCIONES, default=JEFE_PROYECTO)
+    
+    def validate_unique(self, exclude=None):
+        qs = self.__class__.objects.filter(trabajador=self.trabajador)
+        if qs.filter(proyecto=self.proyecto).exists():
+            raise ValidationError('El trabajador ya tiene un rol asignado en este proyecto.')
+    
+    def validate_boss_duplicate(self):
+        if self.tipo_rol != self.JEFE_PROYECTO:
+            return
+        existing = self.__class__.objects.filter(proyecto=self.proyecto).count()
+        if existing > 0:
+            raise ValidationError(
+                "Un mismo proyecto no puede tener más de un Jefe de Proyecto."
+            )
+            
+    def save(self, *args, **kwargs):
+ 
+        self.validate_unique()
+        self.validate_boss_duplicate()
+ 
+        super(Rol, self).save(*args, **kwargs)
     
     class Meta:
         unique_together = (("trabajador", "proyecto"),)
+        verbose_name_plural = "Roles"
     
 class Proyecto(models.Model):
-    nombre = models.CharField(max_length=20)
-    descripcion = models.TextField()
-    activo = models.BooleanField(default=True)
+    nombre = models.CharField(max_length=20, null=False,
+        help_text=_('Required. 20 characters or less.'),
+    )
+    descripcion = models.TextField(max_length=200,
+        help_text=_('200 characters or less.'), blank=True)
+    activo = models.BooleanField(default=True,
+        help_text=_('Indica si el proyecto se encuentra abierto o cerrado.'),
+    )
+    
+    def __str__(self):
+        return self.nombre
     
 class Resumen(models.Model):
-    proyecto = models.ForeignKey('Proyecto')
+    proyecto = models.OneToOneField('Proyecto', primary_key=True)
     descripcion = models.TextField()
+    
+    class Meta:
+        verbose_name_plural = "Res�menes"
 
 class Informe(models.Model):
-    descripcion = models.CharField(max_length=20)
-    actividad = models.ForeignKey('Actividad')
-    
-class Actividad(models.Model):
-    duracion = models.IntegerField()
-    proyecto = models.ForeignKey('Proyecto')
     descripcion = models.TextField()
+    actividad = models.ForeignKey('Actividad')
+    aceptado = models.NullBooleanField(blank=True, null=True)
+    fecha = models.DateTimeField(default = timezone.now)
+    
+    def aceptar(self):
+        self.aceptado = True
+    
+    def rechazar(self):
+        self.aceptado = False
+    
+class Evento(models.Model):
+    proyecto = models.ForeignKey('Proyecto')
+    descripcion = models.TextField(max_length=200)
+    
+class Hito(Evento):
+    fecha = models.DateTimeField()
+    
+class Actividad(Evento):
+    rol = models.ForeignKey('Rol')
     fecha_inicio = models.DateTimeField()
     fecha_fin = models.DateTimeField()
+    
+    class Meta:
+        verbose_name_plural = "Actividades"
