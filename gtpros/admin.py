@@ -1,6 +1,9 @@
-from django.contrib import admin
-from gtpros.models import Trabajador, Proyecto, Rol
 import logging
+
+from django.contrib import admin
+
+from gtpros.models import Trabajador, Proyecto, Rol
+
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -12,7 +15,7 @@ class RolInline(admin.TabularInline):
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "trabajador":
-            kwargs["queryset"] = Trabajador.objects.filter(categoria=Trabajador.JEFE)
+            kwargs["queryset"] = Trabajador.objects.filter(categoria=Trabajador.JEFE).exclude(rol__tipo_rol=Rol.JEFE_PROYECTO)
         return super(RolInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 class ProyectoAdmin(admin.ModelAdmin):

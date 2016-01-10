@@ -17,3 +17,8 @@
 	});
 
 }(jQuery));
+
+function get_events(actividades, hitos) {
+//	alert(actividades);
+//	alert(hitos);
+}

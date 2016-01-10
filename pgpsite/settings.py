@@ -8,9 +8,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.7/ref/settings/
 """
 
-from django.utils.translation import ugettext_lazy as _
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 import os
+
+from django.utils.translation import ugettext_lazy as _
+
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
@@ -57,8 +60,11 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'floppyforms',
     'gtpros',
 )
+
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
 TEMPLATES = [
     {
@@ -96,8 +102,6 @@ MIDDLEWARE_CLASSES = (
 ROOT_URLCONF = 'pgpsite.urls'
 
 WSGI_APPLICATION = 'pgpsite.wsgi.application'
-
-LOGIN_REDIRECT_URL = '/'
 
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases

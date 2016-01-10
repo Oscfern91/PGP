@@ -1,5 +1,46 @@
 {% extends 'gtpros/menu.html' %}
 
+<!-- Main container -->
 {% block content %}
+
+<div class="row">
+	<div class="col-lg-12">
+		<h1 class="page-header">
+			{% if tipo == 'A' %}
+				Nueva Actividad
+			{%else %}
+				Nuevo Hito
+			{% endif %}
+		</h1>
+	</div>
+	<!-- /.col-lg-12 -->
+</div>
+
+<div class="row">
+	<div class="col-lg-12">
+		<form method="POST" class="post-form" role="form">
+			{%csrf_token %}
+			<!-- Modal Body -->
+			<div class="modal-body">
+
+				{% if form.errors %}
+				<div class="text-danger" id="modal-form-error">Por favor,
+					corrija los siguiente errores.</div>
+				{% endif %}
+				
+				{{ form.as_ul }}
+
+			</div>
+
+			<!-- Modal Footer -->
+			<div class="modal-footer">
+
+				<button type="button" class="btn btn-default" data-dismiss="modal">
+					Cancelar</button>
+				<button type="submit" class="btn btn-primary">Guardar</button>
+			</div>
+		</form>
+	</div>
+</div>
 
 {% endblock content %}

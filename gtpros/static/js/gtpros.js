@@ -36,6 +36,7 @@ $(function() {
     
     if($('#modal-form-error').css('display'))
     	$('#modalForm').modal('show');
+    
 });
 
 // Change the cursor icon for project divs
@@ -43,13 +44,14 @@ $(function() {
 	$('.project .panel-heading').css('cursor', 'pointer');
 });
 
-// Loads the project selected
-function selectProject(projectId) {
-	window.location = "/project/" + projectId;
-}
-
 // Shows the modal form for a new report for a given activity
-function openReportModalForm(actividad) {
+function openNewReportModalForm(actividad) {
+	$('input[name="actividad"]').val(actividad)
 	$('#modalForm').modal('show');
 }
+
+// Shows the modal form for accept or refuse a given report
+function openValidateReportModalForm(informe) {
+	$('input[name="informe"]').val(informe)
+	$('#modalForm').modal('show');
 }

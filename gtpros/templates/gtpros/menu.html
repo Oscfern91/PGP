@@ -21,7 +21,15 @@
 			<span class="sr-only">Toggle navigation</span> <span class="icon-bar"></span>
 			<span class="icon-bar"></span> <span class="icon-bar"></span>
 		</button>
-		<a class="navbar-brand" href="/">GTPROS v1.0</a>
+		{% if proyecto %}
+			<a class="navbar-brand" href="{% url 'project' pk=proyecto.id %}">
+				<i class="glyphicon glyphicon-calendar"></i>
+				<b>{{ proyecto.nombre }}</b>
+			</a>
+			
+		{% else %}
+			GTPROS v1.0
+		{% endif %}
 	</div>
 	<!-- /.navbar-header -->
 
@@ -33,7 +41,7 @@
 			<ul class="dropdown-menu dropdown-messages">
 
 				{% for proyecto in request.session.listaProyectos %}
-				<li><a href="{% url 'calendar' pk=proyecto.id %}">
+				<li><a href="{% url 'project' pk=proyecto.id %}">
 						<div>
 							<strong>{{proyecto.nombre}}</strong> <span class="pull-right text-muted">
 								<em>
@@ -50,7 +58,7 @@
 				<li class="divider"></li>
 				{% endfor %}
 
-				<li><a class="text-center" href="/"> <strong>Ver todos los proyectos
+				<li><a class="text-center" href="{% url 'index' %}"> <strong>Ver todos los proyectos
 					</strong> <i class="fa fa-angle-right"></i>
 				</a></li>
 			</ul> <!-- /.dropdown-messages --></li>
@@ -63,7 +71,7 @@
 				<li><a href="#"><i class="fa fa-user fa-fw"></i> {{request.user.username}}</a></li>
 				<li><a href="#"><i class="fa fa-gear fa-fw"></i> Settings</a></li>
 				<li class="divider"></li>
-				<li><a href="/accounts/logout/"><i class="fa fa-sign-out fa-fw"></i>
+				<li><a href="{% url 'logout' %}"><i class="fa fa-sign-out fa-fw"></i>
 						Salir</a></li>
 			</ul> <!-- /.dropdown-user --></li>
 		<!-- /.dropdown -->
@@ -78,15 +86,14 @@
 			</div>
 		{% else %}
 			<ul class="nav" id="side-menu">
-
 				{% if request.session.rol == 'JP' %}
-					<li><a href="workers"><i class="fa fa-wrench fa-fw"></i>
+					<li><a href="{% url 'workers' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
 							Asignar Trabajadores</a></li>
 					<li><a href="#"><i class="glyphicon glyphicon-plus-sign"></i>
 							Crear...<span class="fa arrow"></span></a>
 						<ul class="nav nav-second-level">
-							<li><a href="#">Actividad</a></li>
-							<li><a href="#">Hito</a></li>
+							<li><a href="{% url 'new_event' pk=proyecto.id %}?type=A">Actividad</a></li>
+							<li><a href="{% url 'new_event' pk=proyecto.id %}?type=H">Hito</a></li>
 						</ul> <!-- /.nav-second-level --></li>
 					<li><a href="#"><i class="glyphicon glyphicon-check"></i>
 							Validar...<span class="fa arrow"></span></a>
@@ -94,7 +101,7 @@
 							<li><a href="#">Actividad</a></li>
 							<li><a href="#">Hito</a></li>
 						</ul> <!-- /.nav-second-level --></li>
-					<li><a href="#"><i class="glyphicon glyphicon-eye-open"></i>
+					<li><a href="{% url 'reports' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
 							Ver Informes de Actividad</a></li>
 				{% else %}
 					<li><a href="#"><i class="glyphicon glyphicon-eye-open"></i>
@@ -103,10 +110,10 @@
 							<li><a href="#">Actividad</a></li>
 							<li><a href="#">Hito</a></li>
 						</ul> <!-- /.nav-second-level --></li>
-					<li><a href="new_report"><i class="fa fa-pencil"></i>
+					<li><a href="{% url 'new_report' pk=proyecto.id %}"><i class="fa fa-pencil"></i>
 							Nuevo Informe</a></li>
 				{% endif %}
-				<li><a href="summary"><i class="glyphicon glyphicon-book"></i>
+				<li><a href="{% url 'summary' pk=proyecto.id %}"><i class="glyphicon glyphicon-book"></i>
 						Resumen de Proyecto</a></li>
 			</ul>
 		{% endif %}

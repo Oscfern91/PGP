@@ -1,17 +1,18 @@
 # -*- encoding: utf-8 -*-
+from django.core import validators
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
-from django.core import validators
 from django.utils.translation import ugettext as _
 from pip.cmdoptions import editable
-from django.core.exceptions import ValidationError
+
 
 class Trabajador(models.Model):
     user = models.OneToOneField('auth.User', primary_key=True)
     dni = models.CharField(max_length=9,
        help_text=_('Required. 9 characters. Format: 71254631D.'),
        validators=[
-           validators.RegexValidator(r'^\d{8}[A-Z]{1}$', _('Enter a valid DNI. Format: 71254631D.')
+           validators.RegexValidator(r'^\d{8}[A-Z]{1}$', _('Introduce un DNI valido. Formato: 71254631D.')
              ),
        ],
     verbose_name='DNI', blank=True, null=True)
@@ -27,6 +28,9 @@ class Trabajador(models.Model):
     categoria = models.CharField(max_length=1, choices=CATEGORIA_OPCIONES)
     
     def __str__(self):
+        if self.user.last_name and self.user.first_name:
+            return ''.join([self.user.last_name, ', ', self.user.first_name])
+        else:
             return self.user.username
         
     class Meta:
@@ -34,7 +38,7 @@ class Trabajador(models.Model):
     
 class Rol(models.Model):
     trabajador = models.ForeignKey('Trabajador')
-    proyecto = models.ForeignKey('Proyecto', blank=True, null=True)
+    proyecto = models.ForeignKey('Proyecto')
     
     JEFE_PROYECTO = 'JP'
     ANALISTA = 'AN'
@@ -80,13 +84,16 @@ class Rol(models.Model):
     class Meta:
         unique_together = (("trabajador", "proyecto"),)
         verbose_name_plural = "Roles"
+        
+    def __str__(self):
+        return ''.join([str(self.trabajador), ' - ', self.get_tipo_rol_display()])
     
 class Proyecto(models.Model):
     nombre = models.CharField(max_length=20, null=False,
-        help_text=_('Required. 20 characters or less.'),
+        help_text=_('Obligatorio. Maximo 20 caracteres.'),
     )
     descripcion = models.TextField(max_length=200,
-        help_text=_('200 characters or less.'), blank=True)
+        help_text=_('Un maximo de 200 caracteres.'), blank=True)
     activo = models.BooleanField(default=True,
         help_text=_('Indica si el proyecto se encuentra abierto o cerrado.'),
     )
@@ -99,7 +106,7 @@ class Resumen(models.Model):
     descripcion = models.TextField()
     
     class Meta:
-        verbose_name_plural = "Res�menes"
+        verbose_name_plural = "Resumenes"
 
 class Informe(models.Model):
     descripcion = models.TextField()
@@ -115,6 +122,7 @@ class Informe(models.Model):
     
 class Evento(models.Model):
     proyecto = models.ForeignKey('Proyecto')
+    nombre = models.CharField(max_length=20)
     descripcion = models.TextField(max_length=200)
     
 class Hito(Evento):
@@ -124,6 +132,18 @@ class Actividad(Evento):
     rol = models.ForeignKey('Rol')
     fecha_inicio = models.DateTimeField()
     fecha_fin = models.DateTimeField()
+    
+    def validate_date_coherence(self):
+        if self.fecha_fin <= self.fecha_inicio:
+            raise ValidationError(
+                "La fecha de finalización debe ser posterior a la de inicio."
+            )
+            
+    def save(self, *args, **kwargs):
+ 
+        self.validate_date_coherence()
+ 
+        super(Actividad, self).save(*args, **kwargs)
     
     class Meta:
         verbose_name_plural = "Actividades"

@@ -69,7 +69,13 @@
 	src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script type="text/javascript" src="{% static 'js/calendar.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/language/es-ES.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/app.js' %}"></script>
 <script type="text/javascript">
+	var actividades = "{{actividades}}";
+	var hitos = "{{hitos}}";
+	
+	get_events(actividades, hitos);
+	
 	var options = {
 		events_source: "{% static 'events.json' %}",
 		view: 'month',
@@ -106,5 +112,5 @@
 
 	var calendar = $('#calendar').calendar(options);
 </script>
-<script type="text/javascript" src="{% static 'js/app.js' %}"></script>
+
 {% endblock %}
