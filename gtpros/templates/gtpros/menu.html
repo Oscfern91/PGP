@@ -98,18 +98,12 @@
 					<li><a href="#"><i class="glyphicon glyphicon-check"></i>
 							Validar...<span class="fa arrow"></span></a>
 						<ul class="nav nav-second-level">
-							<li><a href="#">Actividad</a></li>
-							<li><a href="#">Hito</a></li>
+							<li><a href="{% url 'events' pk=proyecto.id type='A' %}">Actividad</a></li>
+							<li><a href="{% url 'events' pk=proyecto.id type='H' %}">Hito</a></li>
 						</ul> <!-- /.nav-second-level --></li>
 					<li><a href="{% url 'reports' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
 							Ver Informes de Actividad</a></li>
 				{% else %}
-					<li><a href="#"><i class="glyphicon glyphicon-eye-open"></i>
-							Consultar...<span class="fa arrow"></span></a>
-						<ul class="nav nav-second-level">
-							<li><a href="#">Actividad</a></li>
-							<li><a href="#">Hito</a></li>
-						</ul> <!-- /.nav-second-level --></li>
 					<li><a href="{% url 'new_report' pk=proyecto.id %}"><i class="fa fa-pencil"></i>
 							Nuevo Informe</a></li>
 				{% endif %}

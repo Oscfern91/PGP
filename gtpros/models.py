@@ -6,7 +6,6 @@ from django.utils import timezone
 from django.utils.translation import ugettext as _
 from pip.cmdoptions import editable
 
-
 class Trabajador(models.Model):
     user = models.OneToOneField('auth.User', primary_key=True)
     dni = models.CharField(max_length=9,
@@ -38,11 +37,11 @@ class Trabajador(models.Model):
     
 class Rol(models.Model):
     trabajador = models.ForeignKey('Trabajador')
-    proyecto = models.ForeignKey('Proyecto')
+    proyecto = models.ForeignKey('Proyecto', blank=True, null=True)
     
     JEFE_PROYECTO = 'JP'
     ANALISTA = 'AN'
-    DISEÑADOR = 'DI'
+    DISENADOR = 'DI'
     ANALISTA_PROG = 'AP'
     RESPONSABLE = 'RE'
     PROGRAMADOR = 'PR'
@@ -51,7 +50,7 @@ class Rol(models.Model):
     ROL_OPCIONES = (
         (JEFE_PROYECTO, 'Jefe de Proyecto'),
         (ANALISTA, 'Analista'),
-        (DISEÑADOR, 'Diseñador'),
+        (DISENADOR, 'Diseñador'),
         (ANALISTA_PROG, 'Analista Programador'),
         (RESPONSABLE, 'Responsable'),
         (PROGRAMADOR, 'Programador'),
@@ -124,6 +123,7 @@ class Evento(models.Model):
     proyecto = models.ForeignKey('Proyecto')
     nombre = models.CharField(max_length=20)
     descripcion = models.TextField(max_length=200)
+    cerrado = models.BooleanField(default=False)
     
 class Hito(Evento):
     fecha = models.DateTimeField()

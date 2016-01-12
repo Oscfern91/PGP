@@ -48,6 +48,7 @@ class ActividadForm(forms.ModelForm):
     fecha_inicio = floppyforms.SplitDateTimeField()
     fecha_fin = floppyforms.SplitDateTimeField()
     
+    
     def __init__(self, *args, **kwargs):
         if 'proyecto' in kwargs:
             proyecto = kwargs.pop('proyecto')
@@ -63,6 +64,7 @@ class ActividadForm(forms.ModelForm):
             
         self.fields['type'] = forms.CharField(widget = forms.HiddenInput())
         self.fields['type'].initial = 'A' 
+        self.fields['rol'].label = ''
         
     class Meta:
         model = Actividad

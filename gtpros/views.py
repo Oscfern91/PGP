@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect
 from gtpros.forms import RolForm, ResumenForm, InformeForm, ActividadForm, \
     HitoForm
 from gtpros.models import Trabajador, Proyecto, Rol, Resumen, Actividad, Informe,\
-    Hito
+    Hito, Evento
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -150,6 +150,42 @@ def validate_report(request, pk):
     informe.save()
     
     return redirect('reports', pk)
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def events(request, pk, type):
+    proyecto = Proyecto.objects.get(pk=pk)
+    
+    if type == 'A':
+        eventos = Actividad.objects.filter(proyecto=proyecto)
+        next = 'gtpros/activities.html'
+    else:
+        eventos = Hito.objects.filter(proyecto=proyecto)
+        next = 'gtpros/boundary_posts.html'
+    
+    return render(request, next, {'proyecto': proyecto, 'eventos': eventos, })
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def validate_event(request, pk):
+    
+    if 'actividad' in request.POST:
+        id = request.POST['actividad']
+        type = 'A'
+    else:
+        id = request.POST['hito']
+        type = 'H'
+        
+    evento = Evento.objects.get(pk=id)
+    
+    aceptado = request.POST['validacion']
+    if aceptado == "0":
+        evento.cerrado = True
+    else:
+        evento.cerrado = False
+    evento.save()
+    
+    return redirect('events', pk, type)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
