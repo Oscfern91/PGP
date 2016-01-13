@@ -106,6 +106,8 @@
 				{% else %}
 					<li><a href="{% url 'new_report' pk=proyecto.id %}"><i class="fa fa-pencil"></i>
 							Nuevo Informe</a></li>
+					<li><a href="{% url 'reports' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
+							Ver Informes</a></li>
 				{% endif %}
 				<li><a href="{% url 'summary' pk=proyecto.id %}"><i class="glyphicon glyphicon-book"></i>
 						Resumen de Proyecto</a></li>

@@ -130,9 +130,6 @@ class Evento(models.Model):
 class Hito(Evento):
     fecha = models.DateTimeField()
     
-    def fechaMillis(self):
-        return int(round(self.fecha.time() * 1000))
-    
 class Actividad(Evento):
     rol = models.ForeignKey('Rol')
     fecha_inicio = models.DateTimeField()

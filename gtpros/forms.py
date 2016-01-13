@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 class RolForm(forms.ModelForm):
     tipo_rol = forms.ChoiceField(label='Rol')
+    readonly_fields = ('proyecto',)
 
     def __init__(self, *args, **kwargs):
         super(RolForm, self).__init__(*args, **kwargs)

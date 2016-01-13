@@ -20,7 +20,11 @@
 <div class="row project">
 	<div class="col-lg-10 col-md-10">
 		<div class="panel panel-primary">
-			<div class="panel-heading" onclick=openValidateReportModalForm({{ informe.id }})>
+			{% if request.session.rol == 'JP' %}
+				<div class="panel-heading" onclick=openValidateReportModalForm({{ informe.id }})>
+			{% else %}
+				<div class="panel-heading">
+			{% endif %}
 				<div class="row">
 					<div class="col-xs-3">
 						<i class="fa fa-book fa-5x"></i>

@@ -51,8 +51,8 @@ def calendar(request, pk):
         actividades_temp = list(Actividad.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
         hitos_temp = list(Hito.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha'))
     else:
-        actividades_temp = list(Actividad.objects.filter(proyecto=proyecto, rol=rol).values('nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
-        hitos_temp = None
+        actividades_temp = list(Actividad.objects.filter(proyecto=proyecto, rol=rol).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
+        hitos_temp = list(Hito.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha'))
         
     actividades = json.dumps(actividades_temp, default=date_handler)
     hitos = json.dumps(hitos_temp, default=date_handler)
@@ -144,7 +144,10 @@ def new_report(request, pk):
 def reports(request, pk):
     proyecto = Proyecto.objects.get(pk=pk)
     
-    informes = Informe.objects.filter(actividad__proyecto=proyecto)
+    if request.session['rol'] == Rol.JEFE_PROYECTO:
+        informes = Informe.objects.filter(actividad__proyecto=proyecto)
+    else:
+        informes = Informe.objects.filter(actividad__proyecto=proyecto, actividad__rol__trabajador__user=request.user)
     
     return render(request, 'gtpros/reports.html', {'proyecto': proyecto, 'informes': informes, })
 
@@ -185,17 +188,17 @@ def validate_event(request, pk):
     if 'actividad' in request.POST:
         id = request.POST['actividad']
         type = 'A'
+        evento = Actividad.objects.get(pk=id)
     else:
         id = request.POST['hito']
         type = 'H'
-        
-    evento = Evento.objects.get(pk=id)
+        evento = Hito.objects.get(pk=id)
     
     aceptado = request.POST['validacion']
     if aceptado == "0":
-        evento.cerrado = True
-    else:
         evento.cerrado = False
+    else:
+        evento.cerrado = True
         
     evento.save()
     
@@ -226,10 +229,10 @@ def summary(request, pk):
     return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'form': form, 'resumen': resumen})
 
 def event_detail(request):
-    event = request.GET.get('id', '')
+    id = request.GET.get('id', '')
     try:
-        evento = Actividad.objects.get(pk=event)
+        evento = Actividad.objects.get(pk=id)
     except:
-        evento = Hito.objects.get(pk=event) 
+        evento = Hito.objects.get(pk=id)
     
     return render(request, 'gtpros/event_detail.html', {'evento': evento})
