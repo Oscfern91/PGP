@@ -2,10 +2,10 @@ from django import forms
 from django.contrib.admin import widgets
 
 from gtpros.models import Rol, Resumen, Informe, Actividad, Hito
-from django.contrib.admin.widgets import AdminDateWidget
 
 import floppyforms
 import logging
+from django.core.exceptions import ValidationError
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -66,6 +66,16 @@ class ActividadForm(forms.ModelForm):
         self.fields['type'].initial = 'A' 
         self.fields['rol'].label = ''
         
+    def clean(self):
+        super(ActividadForm, self).clean()
+        
+        data = self.cleaned_data
+        if data['fecha_fin'] < data['fecha_inicio']:
+            raise ValidationError(
+                "La fecha de finalizacion debe ser posterior a la de inicio."
+            )
+        return data
+    
     class Meta:
         model = Actividad
         fields = ('nombre', 'descripcion', 'rol', 'fecha_inicio', 'fecha_fin', 'proyecto', )

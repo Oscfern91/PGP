@@ -51,12 +51,12 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h3>Event</h3>
+                <h3>Evento</h3>
             </div>
             <div class="modal-body" style="height: 400px">
             </div>
             <div class="modal-footer">
-                <a href="#" data-dismiss="modal" class="btn">Close</a>
+                <a href="#" data-dismiss="modal" class="btn">Cerrar</a>
             </div>
         </div>
     </div>
@@ -69,32 +69,20 @@
 	src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
 <script type="text/javascript" src="{% static 'js/calendar.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/language/es-ES.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/date.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/app.js' %}"></script>
 <script type="text/javascript">
-	var actividades = "{{actividades}}";
-	var hitos = "{{hitos}}";
+	var actividades = "{{actividades|escapejs}}";
+	var hitos = "{{hitos|escapejs}}";
 	
-	get_events(actividades, hitos);
+	var date = new Date().toString('yyyy-MM-dd');
 	
 	var options = {
-		events_source: "{% static 'events.json' %}",
+		events_source: get_events(actividades, hitos),
 		view: 'month',
 		tmpl_path: '{% static "tmpls/" %}',
 		tmpl_cache: false,
-		day: '2013-03-12',
-		onAfterEventsLoad: function(events) {
-			if(!events) {
-				return;
-			}
-			var list = $('#eventlist');
-			list.html('');
-
-			$.each(events, function(key, val) {
-				$(document.createElement('li'))
-					.html('<a href="' + val.url + '">' + val.title + '</a>')
-					.appendTo(list);
-			});
-		},
+		day: date,
 		onAfterViewLoad: function(view) {
 			$('.page-header h3').text(this.getTitle());
 			$('.btn-group button').removeClass('active');

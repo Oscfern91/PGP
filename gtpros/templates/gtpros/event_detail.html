@@ -1,0 +1,22 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Evento</title>
+</head>
+<body>
+<div>
+	{% if evento.rol %}
+		<h1>Actividad: {{evento.nombre}}</h1>
+		{% if evento.rol.trabajador.user.first_name and evento.rol.trabajador.user.last_name %}
+			<h3>Responsable: {{evento.rol.trabajador.user.first_name}} &nbsp; {{evento.rol.trabajador.user.last_name}}</h3>
+		{% else %}
+			<h3>Responsable: {{evento.rol.trabajador.user.username}}, {{evento.rol.tipo_rol}}</h3>
+		{% endif %}
+	{% else %}
+		<h1>Hito: {{evento.nombre}}</h1>
+	{% endif %}
+    
+    <p>{{evento.descripcion}}</p>
+</div>
+</body>
+</html>

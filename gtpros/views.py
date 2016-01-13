@@ -10,6 +10,7 @@ from gtpros.forms import RolForm, ResumenForm, InformeForm, ActividadForm, \
     HitoForm
 from gtpros.models import Trabajador, Proyecto, Rol, Resumen, Actividad, Informe,\
     Hito, Evento
+import json
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -46,10 +47,21 @@ def calendar(request, pk):
     rol = Rol.objects.get(proyecto__id=pk, trabajador=trabajador)
     request.session['rol'] = rol.tipo_rol
     
-    actividades = Actividad.objects.filter(proyecto=proyecto).values('descripcion', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username')
-    hitos = Hito.objects.filter(proyecto=proyecto).values('descripcion', 'fecha')
+    if rol.tipo_rol == Rol.JEFE_PROYECTO:
+        actividades_temp = list(Actividad.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
+        hitos_temp = list(Hito.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha'))
+    else:
+        actividades_temp = list(Actividad.objects.filter(proyecto=proyecto, rol=rol).values('nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
+        hitos_temp = None
+        
+    actividades = json.dumps(actividades_temp, default=date_handler)
+    hitos = json.dumps(hitos_temp, default=date_handler)
     
     return render(request, 'gtpros/calendar.html', {'proyecto': proyecto, 'actividades': actividades, 'hitos': hitos, })
+
+# Fixes data serialization errors
+def date_handler(obj):
+    return obj.isoformat() if hasattr(obj, 'isoformat') else obj
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -86,6 +98,8 @@ def delete_worker(request, pk, rol):
 def new_event(request, pk):
     proyecto = Proyecto.objects.get(pk=pk)
     
+    type_event = request.GET.get('type', '')
+    
     if(request.POST):
         post = request.POST.copy()
         if 'type' in post:
@@ -99,7 +113,6 @@ def new_event(request, pk):
                 form.save()
                 return redirect('project', pk)
     else:
-        type_event = request.GET.get('type', '')
         if type_event == 'A':
             form = ActividadForm(proyecto=proyecto)
         else:
@@ -183,6 +196,7 @@ def validate_event(request, pk):
         evento.cerrado = True
     else:
         evento.cerrado = False
+        
     evento.save()
     
     return redirect('events', pk, type)
@@ -210,3 +224,12 @@ def summary(request, pk):
             form = ResumenForm(initial={'proyecto': proyecto})
             
     return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'form': form, 'resumen': resumen})
+
+def event_detail(request):
+    event = request.GET.get('id', '')
+    try:
+        evento = Actividad.objects.get(pk=event)
+    except:
+        evento = Hito.objects.get(pk=event) 
+    
+    return render(request, 'gtpros/event_detail.html', {'evento': evento})

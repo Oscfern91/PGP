@@ -64,8 +64,6 @@ INSTALLED_APPS = (
     'gtpros',
 )
 
-CRISPY_TEMPLATE_PACK = 'bootstrap3'
-
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -108,12 +106,14 @@ WSGI_APPLICATION = 'pgpsite.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'gtpros.db',
-        'USER': 'PGP_grupo03',
-        'PASSWORD': 'bGQX5QHO',
-        'HOST': 'jair.lab.inf.uva.es',
-        'PORT': '',
+#         'ENGINE': 'django.db.backends.mysql',
+#         'NAME': 'PGP_grupo03',
+#         'USER': 'PGP_grupo03',
+#         'PASSWORD': 'bGQX5QHO',
+#         'HOST': 'jair.lab.inf.uva.es',
+#         'PORT': '',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
 

@@ -4,7 +4,6 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import ugettext as _
-from pip.cmdoptions import editable
 
 class Trabajador(models.Model):
     user = models.OneToOneField('auth.User', primary_key=True)
@@ -125,8 +124,14 @@ class Evento(models.Model):
     descripcion = models.TextField(max_length=200)
     cerrado = models.BooleanField(default=False)
     
+    class Meta:
+        abstract = True
+    
 class Hito(Evento):
     fecha = models.DateTimeField()
+    
+    def fechaMillis(self):
+        return int(round(self.fecha.time() * 1000))
     
 class Actividad(Evento):
     rol = models.ForeignKey('Rol')
@@ -147,3 +152,4 @@ class Actividad(Evento):
     
     class Meta:
         verbose_name_plural = "Actividades"
+        

@@ -17,4 +17,5 @@ urlpatterns = [
     url(r'^project/(?P<pk>[0-9]+)/events/(?P<type>[A,H])/$', views.events, name='events'),
     url(r'^project/(?P<pk>[0-9]+)/validate_event$', views.validate_event, name='validate_event'),
     url(r'^project/(?P<pk>[0-9]+)/summary$', views.summary, name='summary'),
+    url(r'^event_detail$', views.event_detail, name='event_detail'),
 ]
