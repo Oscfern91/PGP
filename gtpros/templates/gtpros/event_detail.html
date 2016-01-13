@@ -5,8 +5,7 @@
 </head>
 <body>
 <div>
-{{evento.id}}
-	{% if evento.rol %}
+	{% if tipo == 'A' %}
 		<h1>Actividad: {{evento.nombre}}</h1>
 		{% if evento.rol.trabajador.user.first_name and evento.rol.trabajador.user.last_name %}
 			<h3>Responsable: {{evento.rol.trabajador.user.first_name}} &nbsp; {{evento.rol.trabajador.user.last_name}}</h3>

@@ -30,7 +30,7 @@ function get_events(actividades, hitos) {
 			var item = {};
 			item["id"] = actividad.id;
 			item["title"] = actividad.nombre;
-			item["url"] = "/event_detail?id=".concat(actividad.id);
+			item["url"] = "/actividad_detalle?id=".concat(actividad.id);
 			item["class"] = "event-warning";
 			var iniDate = new Date(actividad.fecha_inicio);
 			item["start"] = "".concat(iniDate.getTime());
@@ -47,7 +47,7 @@ function get_events(actividades, hitos) {
 			var item = {};
 			item["id"] = hito.id;
 			item["title"] = hito.nombre;
-			item["url"] = "/event_detail?id=".concat(hito.id);
+			item["url"] = "/hito_detalle?id=".concat(hito.id);
 			item["class"] = "event-info";
 			var date = new Date(hito.fecha);
 			item["start"] = "".concat(date.getTime());

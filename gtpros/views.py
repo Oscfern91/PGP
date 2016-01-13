@@ -228,11 +228,14 @@ def summary(request, pk):
             
     return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'form': form, 'resumen': resumen})
 
-def event_detail(request):
+def actividad_detalle(request):
     id = request.GET.get('id', '')
-    try:
-        evento = Actividad.objects.get(pk=id)
-    except:
-        evento = Hito.objects.get(pk=id)
+    evento = Actividad.objects.get(pk=id)
     
-    return render(request, 'gtpros/event_detail.html', {'evento': evento})
+    return render(request, 'gtpros/event_detail.html', {'evento': evento, 'tipo': 'A'})
+
+def hito_detalle(request):
+    id = request.GET.get('id', '')
+    evento = Hito.objects.get(pk=id)
+    
+    return render(request, 'gtpros/event_detail.html', {'evento': evento, 'tipo': 'H'})
