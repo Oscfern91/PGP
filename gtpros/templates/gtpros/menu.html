@@ -22,7 +22,7 @@
 			<span class="icon-bar"></span> <span class="icon-bar"></span>
 		</button>
 		{% if proyecto %}
-			<a class="navbar-brand" href="{% url 'project' pk=proyecto.id %}">
+			<a class="navbar-brand" href="{% url 'project' id_proyecto=proyecto.id %}">
 				<i class="glyphicon glyphicon-calendar"></i>
 				<b>{{ proyecto.nombre }}</b>
 			</a>
@@ -41,7 +41,7 @@
 			<ul class="dropdown-menu dropdown-messages">
 
 				{% for proyecto in request.session.listaProyectos %}
-				<li><a href="{% url 'project' pk=proyecto.id %}">
+				<li><a href="{% url 'project' id_proyecto=proyecto.id %}">
 						<div>
 							<strong>{{proyecto.nombre}}</strong> <span class="pull-right text-muted">
 								<em>
@@ -87,29 +87,29 @@
 		{% else %}
 			<ul class="nav" id="side-menu">
 				{% if request.session.rol == 'JP' %}
-					<li><a href="{% url 'workers' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
+					<li><a href="{% url 'workers' id_proyecto=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
 							Asignar Trabajadores</a></li>
 					<li><a href="#"><i class="glyphicon glyphicon-plus-sign"></i>
 							Crear...<span class="fa arrow"></span></a>
 						<ul class="nav nav-second-level">
-							<li><a href="{% url 'new_event' pk=proyecto.id %}?type=A">Actividad</a></li>
-							<li><a href="{% url 'new_event' pk=proyecto.id %}?type=H">Hito</a></li>
+							<li><a href="{% url 'new_event' id_proyecto=proyecto.id tipo_evento='A' %}">Actividad</a></li>
+							<li><a href="{% url 'new_event' id_proyecto=proyecto.id tipo_evento='H' %}">Hito</a></li>
 						</ul> <!-- /.nav-second-level --></li>
 					<li><a href="#"><i class="glyphicon glyphicon-check"></i>
 							Validar...<span class="fa arrow"></span></a>
 						<ul class="nav nav-second-level">
-							<li><a href="{% url 'events' pk=proyecto.id type='A' %}">Actividad</a></li>
-							<li><a href="{% url 'events' pk=proyecto.id type='H' %}">Hito</a></li>
+							<li><a href="{% url 'events' id_proyecto=proyecto.id tipo_evento='A' %}">Actividad</a></li>
+							<li><a href="{% url 'events' id_proyecto=proyecto.id tipo_evento='H' %}">Hito</a></li>
 						</ul> <!-- /.nav-second-level --></li>
-					<li><a href="{% url 'reports' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
+					<li><a href="{% url 'reports' id_proyecto=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
 							Ver Informes de Actividad</a></li>
 				{% else %}
-					<li><a href="{% url 'new_report' pk=proyecto.id %}"><i class="fa fa-pencil"></i>
+					<li><a href="{% url 'new_report' id_proyecto=proyecto.id %}"><i class="fa fa-pencil"></i>
 							Nuevo Informe</a></li>
-					<li><a href="{% url 'reports' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
+					<li><a href="{% url 'reports' id_proyecto=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
 							Ver Informes</a></li>
 				{% endif %}
-				<li><a href="{% url 'summary' pk=proyecto.id %}"><i class="glyphicon glyphicon-book"></i>
+				<li><a href="{% url 'summary' id_proyecto=proyecto.id %}"><i class="glyphicon glyphicon-book"></i>
 						Resumen de Proyecto</a></li>
 			</ul>
 		{% endif %}

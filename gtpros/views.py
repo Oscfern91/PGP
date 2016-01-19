@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect
 from gtpros.forms import RolForm, ResumenForm, InformeForm, ActividadForm, \
     HitoForm
 from gtpros.models import Trabajador, Proyecto, Rol, Resumen, Actividad, Informe,\
-    Hito, Evento
+    Hito
 import json
 
 # Get an instance of a logger
@@ -40,11 +40,11 @@ def index(request):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def calendar(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def calendar(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     trabajador = Trabajador.objects.get(user__username=request.user.username)
-    rol = Rol.objects.get(proyecto__id=pk, trabajador=trabajador)
+    rol = Rol.objects.get(proyecto__id=id_proyecto, trabajador=trabajador)
     request.session['rol'] = rol.tipo_rol
     
     if rol.tipo_rol == Rol.JEFE_PROYECTO:
@@ -65,8 +65,8 @@ def date_handler(obj):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def workers(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def workers(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     roles_temp = Rol.objects.filter(proyecto=proyecto)\
         .order_by('tipo_rol')
@@ -79,7 +79,7 @@ def workers(request, pk):
         form = RolForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('workers', pk)
+            return redirect('workers', id_proyecto)
     else:
         form = RolForm(initial={'proyecto': proyecto})
         
@@ -87,18 +87,16 @@ def workers(request, pk):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def delete_worker(request, pk, rol):
+def delete_worker(request, id_proyecto, rol):
     
     Rol.objects.get(pk=rol).delete()
     
-    return redirect('workers', pk)
+    return redirect('workers', id_proyecto)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def new_event(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
-    
-    type_event = request.GET.get('type', '')
+def new_event(request, id_proyecto, tipo_evento):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     if(request.POST):
         post = request.POST.copy()
@@ -111,28 +109,28 @@ def new_event(request, pk):
                 
             if form.is_valid():
                 form.save()
-                return redirect('project', pk)
+                return redirect('project', id_proyecto)
     else:
-        if type_event == 'A':
+        if tipo_evento == 'A':
             form = ActividadForm(proyecto=proyecto)
         else:
             form = HitoForm(initial={'proyecto': proyecto})
     
-    return render(request, 'gtpros/new_event.html', {'proyecto': proyecto, 'form':form, 'tipo': type_event})
+    return render(request, 'gtpros/new_event.html', {'proyecto': proyecto, 'form':form, 'tipo': tipo_evento})
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def new_report(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def new_report(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     user = request.user
-    actividades = Actividad.objects.filter(rol__proyecto__id=pk, rol__trabajador__user=user)
+    actividades = Actividad.objects.filter(rol__proyecto__id=id_proyecto, rol__trabajador__user=user)
     
     if request.POST:
         form = InformeForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('new_report', pk)
+            return redirect('new_report', id_proyecto)
             
     else:
         form = InformeForm()
@@ -141,8 +139,8 @@ def new_report(request, pk):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def reports(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def reports(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     if request.session['rol'] == Rol.JEFE_PROYECTO:
         informes = Informe.objects.filter(actividad__proyecto=proyecto)
@@ -153,7 +151,7 @@ def reports(request, pk):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def validate_report(request, pk):
+def validate_report(request, id_proyecto):
     
     informeId = request.POST['informe']
     informe = Informe.objects.get(pk=informeId)
@@ -165,34 +163,34 @@ def validate_report(request, pk):
         informe.aceptado = False
     informe.save()
     
-    return redirect('reports', pk)
+    return redirect('reports', id_proyecto)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def events(request, pk, type):
-    proyecto = Proyecto.objects.get(pk=pk)
+def events(request, id_proyecto, tipo_evento):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
-    if type == 'A':
+    if tipo_evento == 'A':
         eventos = Actividad.objects.filter(proyecto=proyecto)
-        next = 'gtpros/activities.html'
+        nextTemplate = 'gtpros/activities.html'
     else:
         eventos = Hito.objects.filter(proyecto=proyecto)
-        next = 'gtpros/boundary_posts.html'
+        nextTemplate = 'gtpros/boundary_posts.html'
     
-    return render(request, next, {'proyecto': proyecto, 'eventos': eventos, })
+    return render(request, nextTemplate, {'proyecto': proyecto, 'eventos': eventos, })
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def validate_event(request, pk):
+def validate_event(request, id_proyecto):
     
     if 'actividad' in request.POST:
-        id = request.POST['actividad']
-        type = 'A'
-        evento = Actividad.objects.get(pk=id)
+        eventoId = request.POST['actividad']
+        tipo_evento = 'A'
+        evento = Actividad.objects.get(pk=eventoId)
     else:
-        id = request.POST['hito']
-        type = 'H'
-        evento = Hito.objects.get(pk=id)
+        eventoId = request.POST['hito']
+        tipo_evento = 'H'
+        evento = Hito.objects.get(pk=eventoId)
     
     aceptado = request.POST['validacion']
     if aceptado == "0":
@@ -202,12 +200,12 @@ def validate_event(request, pk):
         
     evento.save()
     
-    return redirect('events', pk, type)
+    return redirect('events', id_proyecto, tipo_evento)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def summary(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def summary(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     try:
         resumen = Resumen.objects.get(proyecto=proyecto)
@@ -218,7 +216,7 @@ def summary(request, pk):
         form = ResumenForm(request.POST, instance=resumen)
         if form.is_valid():
             form.save()
-            return redirect('summary', pk)
+            return redirect('summary', id_proyecto)
             
     else:
         if resumen:
@@ -229,13 +227,13 @@ def summary(request, pk):
     return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'form': form, 'resumen': resumen})
 
 def actividad_detalle(request):
-    id = request.GET.get('id', '')
-    evento = Actividad.objects.get(pk=id)
+    id_actividad = request.GET.get('id', '')
+    evento = Actividad.objects.get(pk=id_actividad)
     
     return render(request, 'gtpros/event_detail.html', {'evento': evento, 'tipo': 'A'})
 
 def hito_detalle(request):
-    id = request.GET.get('id', '')
-    evento = Hito.objects.get(pk=id)
+    id_hito = request.GET.get('id', '')
+    evento = Hito.objects.get(pk=id_hito)
     
     return render(request, 'gtpros/event_detail.html', {'evento': evento, 'tipo': 'H'})

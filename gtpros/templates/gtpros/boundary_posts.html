@@ -59,7 +59,7 @@
 	aria-labelledby="myModalLabel" aria-hidden="true">
 	<div class="modal-dialog">
 		<div class="modal-content">
-			<form method="POST" class="post-form" role="form" action="{% url 'validate_event' pk=proyecto.id %}">
+			<form method="POST" class="post-form" role="form" action="{% url 'validate_event' id_proyecto=proyecto.id %}">
 			{%csrf_token %}
 				<!-- Modal Body -->
 				<div class="modal-body">

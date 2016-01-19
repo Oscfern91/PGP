@@ -1,5 +1,4 @@
 from django import forms
-from django.contrib.admin import widgets
 
 from gtpros.models import Rol, Resumen, Informe, Actividad, Hito
 
