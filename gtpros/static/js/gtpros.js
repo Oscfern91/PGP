@@ -39,7 +39,7 @@ $(function() {
     
 });
 
-// Change the cursor icon for project divs
+// Change the cursor icon for some divs
 $(function() {
 	$('.project .panel-heading').css('cursor', 'pointer');
 });

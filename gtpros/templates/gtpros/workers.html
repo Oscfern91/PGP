@@ -7,17 +7,16 @@
 	<div class="col-lg-12 col-md-12">
 		<a class="btn btn-default header-button" data-toggle="modal"
 			data-target="#modalForm"><span class="glyphicon glyphicon-plus"></span></a>
-		<h1 class="page-header">Trabajadores</h1>
+		<h1 class="page-header">Trabajadores del Proyecto</h1>
 
 	</div>
 	<!-- /.col-lg-12 -->
 </div>
 
-{% for key, values in roles.items %}
 <div class="row">
 	<div class="col-lg-10 col-md-10">
 		<div class="panel panel-default">
-			<div class="panel-heading">{{ key }}</div>
+			<div class="panel-heading">Jefe De Proyecto</div>
 			<!-- /.panel-heading -->
 			<div class="panel-body">
 				<div class="table-responsive">
@@ -30,16 +29,48 @@
 							</tr>
 						</thead>
 						<tbody>
-							{% for v in values %}
 							<tr>
-								<td>{{ v.trabajador.user.first_name }}</td>
-								<td>{{ v.trabajador.user.last_nam }}</td>
-								<td>{{ v.trabajador.user.username }}</td>
-								{% if key != 'Jefe de Proyecto' %}
-								<td class="bg-danger"><a href="{% url 'delete_worker' pk=proyecto.id rol=v.id %}">
+								<td>{{ jefe.user.first_name }}</td>
+								<td>{{ jefe.user.last_nam }}</td>
+								<td>{{ jefe.user.username }}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<!-- /.table-responsive -->
+			</div>
+			<!-- /.panel-body -->
+		</div>
+		<!-- /.panel -->
+	</div>
+	<!-- /.col-lg-6 -->
+</div>
+<!-- /.row -->
+
+<div class="row">
+	<div class="col-lg-10 col-md-10">
+		<div class="panel panel-default">
+			<div class="panel-heading">Desarrolladores</div>
+			<!-- /.panel-heading -->
+			<div class="panel-body">
+				<div class="table-responsive">
+					<table class="table table-striped table-bordered table-hover">
+						<thead>
+							<tr>
+								<th>Nombre</th>
+								<th>Apellidos</th>
+								<th>Nick</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for trabajador in trabajadores %}
+							<tr>
+								<td>{{ trabajador.user.first_name }}</td>
+								<td>{{ trabajador.user.last_nam }}</td>
+								<td>{{ trabajador.user.username }}</td>
+								<td class="bg-danger"><a href="{% url 'delete_worker' pk=proyecto.id worker=trabajador.pk %}">
 									<div class="text-center"><i class="glyphicon glyphicon-remove"></i></div>
 								</a></td>
-								{% endif %}
 							</tr>
 							{% endfor %}
 						</tbody>
@@ -54,7 +85,6 @@
 	<!-- /.col-lg-6 -->
 </div>
 <!-- /.row -->
-{% endfor %}
 
 <div class="modal fade" id="modalForm" tabindex="-1" role="dialog"
 	aria-labelledby="myModalLabel" aria-hidden="true">

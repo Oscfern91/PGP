@@ -28,11 +28,7 @@
 					<div class="col-xs-9 text-right">
 						<div class="huge">{{proyecto.nombre}}</div>
 						<div>
-							{% if proyecto.activo %}
-								ACTIVO
-							{% else %}
-								INACTIVO
-							{% endif %}
+							ESTADO: {{ proyecto.get_estado_display }}
 						</div>
 					</div>
 				</div>

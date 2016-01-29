@@ -45,11 +45,7 @@
 						<div>
 							<strong>{{proyecto.nombre}}</strong> <span class="pull-right text-muted">
 								<em>
-								{% if proyecto.activo %}
-									ACTIVO
-								{% else %}
-									INACTIVO
-								{% endif %}
+								ESTADO: {{ proyecto.get_estado_display }}
 								</em>
 							</span>
 						</div>
@@ -80,37 +76,45 @@
 
 	<div class="navbar-default sidebar" role="navigation">
 		<div class="sidebar-nav navbar-collapse">
-		{% if not request.session.rol %}
+		{% if not proyecto %}
 			<div class="bg-warning">
 				Selecciona un proyecto.
 			</div>
 		{% else %}
 			<ul class="nav" id="side-menu">
-				{% if request.session.rol == 'JP' %}
-					<li><a href="{% url 'workers' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
-							Asignar Trabajadores</a></li>
-					<li><a href="#"><i class="glyphicon glyphicon-plus-sign"></i>
-							Crear...<span class="fa arrow"></span></a>
-						<ul class="nav nav-second-level">
-							<li><a href="{% url 'new_event' pk=proyecto.id %}?type=A">Actividad</a></li>
-							<li><a href="{% url 'new_event' pk=proyecto.id %}?type=H">Hito</a></li>
-						</ul> <!-- /.nav-second-level --></li>
-					<li><a href="#"><i class="glyphicon glyphicon-check"></i>
-							Validar...<span class="fa arrow"></span></a>
-						<ul class="nav nav-second-level">
-							<li><a href="{% url 'events' pk=proyecto.id type='A' %}">Actividad</a></li>
-							<li><a href="{% url 'events' pk=proyecto.id type='H' %}">Hito</a></li>
-						</ul> <!-- /.nav-second-level --></li>
-					<li><a href="{% url 'reports' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
-							Ver Informes de Actividad</a></li>
+				{% if request.session.jefe %}
+					{% if proyecto.estado == 'N' %}
+						<li><a href="{% url 'cargos' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
+								Asignar Trabajadores</a></li>
+						<li><a href="{% url 'importar' pk=proyecto.id %}"><i class="glyphicon glyphicon-plus-sign"></i>
+								Importar actividades e hitos</a>
+					{% endif %}
+					{% if proyecto.estado == 'A' %}
+						<li><a href="{% url 'roles' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
+								Asignar Roles a Actividades</a></li>
+					{% endif %}
+					{% if proyecto.estado == 'P' %}
+						<li><a href="{% url 'roles' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
+								Ver Roles Asignados</a></li>
+					{% endif %}
+					{% if proyecto.estado == 'I' %}
+						<li><a href="{% url 'validar' pk=proyecto.id %}"><i class="glyphicon glyphicon-check"></i>
+								Validar Actividades e Hitos</a>
+					{% endif %}
 				{% else %}
-					<li><a href="{% url 'new_report' pk=proyecto.id %}"><i class="fa fa-pencil"></i>
-							Nuevo Informe</a></li>
-					<li><a href="{% url 'reports' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
-							Ver Informes</a></li>
+					{% if proyecto.estado == 'A' or proyecto.estado == 'P' %}
+						<li><a href="{% url 'actividades' pk=proyecto.id %}"><i class="glyphicon glyphicon-check"></i>
+								Listar Actividades Asignadas</a>
+					{% endif %}
 				{% endif %}
-				<li><a href="{% url 'summary' pk=proyecto.id %}"><i class="glyphicon glyphicon-book"></i>
-						Resumen de Proyecto</a></li>
+				{% if proyecto.estado == 'I' %}
+					<li><a href="{% url 'informes' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
+							Informes de Actividad</a></li>
+				{% endif %}
+				{% if proyecto.estado == 'F' %}
+					<li><a href="{% url 'summary' pk=proyecto.id %}"><i class="glyphicon glyphicon-book"></i>
+							Resumen de Proyecto</a></li>
+				{% endif %}
 			</ul>
 		{% endif %}
 		</div>

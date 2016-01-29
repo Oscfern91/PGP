@@ -15,56 +15,30 @@ class Trabajador(models.Model):
        ],
     verbose_name='DNI', blank=True, null=True)
     
-    JEFE = 'J'
-    DESARROLLADOR = 'D'
-    
-    CATEGORIA_OPCIONES = (
-        (JEFE, 'Jefe'),
-        (DESARROLLADOR, 'Desarrollador'),
-    )
-    
-    categoria = models.CharField(max_length=1, choices=CATEGORIA_OPCIONES)
+    categoria = models.IntegerField()
     
     def __str__(self):
         if self.user.last_name and self.user.first_name:
-            return ''.join([self.user.last_name, ', ', self.user.first_name])
+            output = ''.join([self.user.last_name, ', ', self.user.first_name])
         else:
-            return self.user.username
+            output = self.user.username
+        return ''.join([output, ' - ', str(self.categoria)])
         
     class Meta:
         verbose_name_plural = "Trabajadores"
     
-class Rol(models.Model):
+class Cargo(models.Model):
+    proyecto = models.ForeignKey('Proyecto')
     trabajador = models.ForeignKey('Trabajador')
-    proyecto = models.ForeignKey('Proyecto', blank=True, null=True)
-    
-    JEFE_PROYECTO = 'JP'
-    ANALISTA = 'AN'
-    DISENADOR = 'DI'
-    ANALISTA_PROG = 'AP'
-    RESPONSABLE = 'RE'
-    PROGRAMADOR = 'PR'
-    PROBADOR = 'QA'
-    
-    ROL_OPCIONES = (
-        (JEFE_PROYECTO, 'Jefe de Proyecto'),
-        (ANALISTA, 'Analista'),
-        (DISENADOR, 'Diseñador'),
-        (ANALISTA_PROG, 'Analista Programador'),
-        (RESPONSABLE, 'Responsable'),
-        (PROGRAMADOR, 'Programador'),
-        (PROBADOR, 'Probador'),
-    )
-    
-    tipo_rol = models.CharField(max_length=2, choices=ROL_OPCIONES, default=JEFE_PROYECTO)
+    es_jefe = models.BooleanField(default=True)
     
     def validate_unique(self, exclude=None):
         qs = self.__class__.objects.filter(trabajador=self.trabajador)
         if qs.filter(proyecto=self.proyecto).exists():
-            raise ValidationError('El trabajador ya tiene un rol asignado en este proyecto.')
-    
+            raise ValidationError('El trabajador ya tiene un cargo asignado en este proyecto.')
+        
     def validate_boss_duplicate(self):
-        if self.tipo_rol != self.JEFE_PROYECTO:
+        if self.es_jefe != True:
             return
         existing = self.__class__.objects.filter(proyecto=self.proyecto).count()
         if existing > 0:
@@ -72,15 +46,32 @@ class Rol(models.Model):
                 "Un mismo proyecto no puede tener más de un Jefe de Proyecto."
             )
             
-    def save(self, *args, **kwargs):
- 
-        self.validate_unique()
-        self.validate_boss_duplicate()
- 
-        super(Rol, self).save(*args, **kwargs)
-    
     class Meta:
         unique_together = (("trabajador", "proyecto"),)
+    
+class Rol(models.Model):
+    trabajador = models.ForeignKey('Trabajador', blank=True, null=True)
+    evento = models.ForeignKey('Evento')
+    
+    ANALISTA = 'AN'
+    DISENADOR = 'DI'
+    ANALISTA_PROG = 'AP'
+    RESPONSABLE_PRUEBAS = 'RP'
+    PROGRAMADOR = 'PG'
+    PROBADOR = 'QA'
+    
+    ROL_OPCIONES = (
+        (ANALISTA, 'Analista'),
+        (DISENADOR, 'Diseñador'),
+        (ANALISTA_PROG, 'Analista Programador'),
+        (RESPONSABLE_PRUEBAS, 'Responsable'),
+        (PROGRAMADOR, 'Programador'),
+        (PROBADOR, 'Probador'),
+    )
+    
+    tipo_rol = models.CharField(max_length=2, choices=ROL_OPCIONES)
+            
+    class Meta:
         verbose_name_plural = "Roles"
         
     def __str__(self):
@@ -92,9 +83,30 @@ class Proyecto(models.Model):
     )
     descripcion = models.TextField(max_length=200,
         help_text=_('Un maximo de 200 caracteres.'), blank=True)
-    activo = models.BooleanField(default=True,
-        help_text=_('Indica si el proyecto se encuentra abierto o cerrado.'),
+    fecha_inicio = models.DateTimeField()
+    fecha_fin = models.DateTimeField()
+    
+    NUEVO = 'N'
+    ASIGNACION = 'A'
+    PREPARADO = 'P'
+    INICIADO = 'I'
+    FINALIZADO = 'F'
+    
+    ESTADO_OPCIONES = (
+        (NUEVO, 'Inicial'),
+        (ASIGNACION, 'Asignación'),
+        (PREPARADO, 'Preparado'),
+        (INICIADO, 'Iniciado'),
+        (FINALIZADO, 'Finalizado')
     )
+    
+    estado = models.CharField(max_length=1, choices=ESTADO_OPCIONES, default=NUEVO)
+    
+    def validate_date_coherence(self):
+        if self.fecha_fin <= self.fecha_inicio:
+            raise ValidationError(
+                "La fecha de finalización debe ser posterior a la de inicio."
+            )
     
     def __str__(self):
         return self.nombre
@@ -108,9 +120,15 @@ class Resumen(models.Model):
 
 class Informe(models.Model):
     descripcion = models.TextField()
-    actividad = models.ForeignKey('Actividad')
+    evento = models.ForeignKey('Evento')
     aceptado = models.NullBooleanField(blank=True, null=True)
-    fecha = models.DateTimeField(default = timezone.now)
+    fecha = models.DateTimeField(default=timezone.now)
+    
+    lunes = models.IntegerField()
+    martes = models.IntegerField()
+    miercoles = models.IntegerField()
+    jueves = models.IntegerField()
+    viernes = models.IntegerField()
     
     def aceptar(self):
         self.aceptado = True
@@ -119,24 +137,17 @@ class Informe(models.Model):
         self.aceptado = False
     
 class Evento(models.Model):
+    id_evento = models.IntegerField()
     proyecto = models.ForeignKey('Proyecto')
-    nombre = models.CharField(max_length=20)
-    descripcion = models.TextField(max_length=200)
-    cerrado = models.BooleanField(default=False)
-    
-    class Meta:
-        abstract = True
-    
-class Hito(Evento):
-    fecha = models.DateTimeField()
-    
-class Actividad(Evento):
-    rol = models.ForeignKey('Rol')
-    fecha_inicio = models.DateTimeField()
-    fecha_fin = models.DateTimeField()
+    nombre = models.CharField(max_length = 20)
+    descripcion = models.TextField(max_length = 200)
+    cerrado = models.BooleanField(default = False)
+    fecha_inicio = models.DateTimeField(null=True)
+    fecha_fin = models.DateTimeField(null=True)
+    duracion = models.IntegerField(default = 0)
     
     def validate_date_coherence(self):
-        if self.fecha_fin <= self.fecha_inicio:
+        if self.fecha_inicio > self.fecha_fin:
             raise ValidationError(
                 "La fecha de finalización debe ser posterior a la de inicio."
             )
@@ -145,8 +156,12 @@ class Actividad(Evento):
  
         self.validate_date_coherence()
  
-        super(Actividad, self).save(*args, **kwargs)
-    
-    class Meta:
-        verbose_name_plural = "Actividades"
+        super(Evento, self).save(*args, **kwargs)
         
+    class Meta:
+        unique_together = (("id", "proyecto"),)
+        
+class Predecesor(models.Model):
+    evento = models.ForeignKey('Evento', related_name='evento')
+    evento_anterior = models.ForeignKey('Evento', related_name='evento_anterior', blank=True, null=True)
+    

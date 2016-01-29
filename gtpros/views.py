@@ -6,10 +6,9 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect
 
-from gtpros.forms import RolForm, ResumenForm, InformeForm, ActividadForm, \
-    HitoForm
-from gtpros.models import Trabajador, Proyecto, Rol, Resumen, Actividad, Informe,\
-    Hito, Evento
+from gtpros.forms import InformeForm, CargoForm, UploadFileForm, RolForm
+from gtpros.models import Trabajador, Proyecto, Rol, Resumen, Informe, Evento, \
+    Cargo, Predecesor
 import json
 
 # Get an instance of a logger
@@ -22,15 +21,15 @@ def index(request):
     try:
         
         trabajador = Trabajador.objects.get(user__username=request.user.username)
-        proyectos = Proyecto.objects.filter(rol__trabajador=trabajador).values('id', 'nombre', 'descripcion', 'activo')
+        proyectos = Proyecto.objects.filter(cargo__trabajador=trabajador)
         
         logger.debug('Proyectos de ' + trabajador.user.username + ':')
         logger.debug(proyectos)
         
         request.session['listaProyectos'] = list(proyectos)
         
-        if 'rol' in request.session:
-            del request.session['rol']
+        if 'jefe' in request.session:
+            del request.session['jefe']
         return render(request, 'gtpros/index.html', {})
     
     except Trabajador.DoesNotExist:
@@ -40,85 +39,171 @@ def index(request):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def calendar(request, pk):
+def cargos(request, pk):
     proyecto = Proyecto.objects.get(pk=pk)
     
-    trabajador = Trabajador.objects.get(user__username=request.user.username)
-    rol = Rol.objects.get(proyecto__id=pk, trabajador=trabajador)
-    request.session['rol'] = rol.tipo_rol
-    
-    if rol.tipo_rol == Rol.JEFE_PROYECTO:
-        actividades_temp = list(Actividad.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
-        hitos_temp = list(Hito.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha'))
-    else:
-        actividades_temp = list(Actividad.objects.filter(proyecto=proyecto, rol=rol).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
-        hitos_temp = list(Hito.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha'))
-        
-    actividades = json.dumps(actividades_temp, default=date_handler)
-    hitos = json.dumps(hitos_temp, default=date_handler)
-    
-    return render(request, 'gtpros/calendar.html', {'proyecto': proyecto, 'actividades': actividades, 'hitos': hitos, })
-
-# Fixes data serialization errors
-def date_handler(obj):
-    return obj.isoformat() if hasattr(obj, 'isoformat') else obj
-
-@login_required
-@user_passes_test(lambda u: not u.is_superuser)    
-def workers(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
-    
-    roles_temp = Rol.objects.filter(proyecto=proyecto)\
-        .order_by('tipo_rol')
-    roles = defaultdict(list)
-    for rol in roles_temp:
-        key = rol.get_tipo_rol_display()
-        roles[key].append(rol)
+    cargos_temp = Cargo.objects.filter(proyecto=proyecto)
+    trabajadores = []
+    for cargo in cargos_temp:
+        if cargo.es_jefe:
+            jefe = cargo.trabajador
+        else:
+            trabajadores.append(cargo.trabajador)
             
     if request.POST:
-        form = RolForm(request.POST)
+        form = CargoForm(request.POST, proyecto=proyecto)
         if form.is_valid():
             form.save()
-            return redirect('workers', pk)
+            return redirect('cargos', pk)
     else:
-        form = RolForm(initial={'proyecto': proyecto})
+        form = CargoForm(proyecto=proyecto)
         
-    return render(request, 'gtpros/workers.html', {'proyecto': proyecto, 'form': form, 'roles': dict(roles)})
+    return render(request, 'gtpros/workers.html', {'proyecto': proyecto, 'form': form, 'jefe': jefe, 'trabajadores': trabajadores})
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def delete_worker(request, pk, rol):
+def delete_worker(request, pk, worker):
     
-    Rol.objects.get(pk=rol).delete()
+    Cargo.objects.get(proyecto=pk, trabajador__pk=worker).delete()
     
-    return redirect('workers', pk)
+    return redirect('cargos', pk)
 
 @login_required
-@user_passes_test(lambda u: not u.is_superuser)    
-def new_event(request, pk):
+@user_passes_test(lambda u: not u.is_superuser)
+def importar(request, pk):
     proyecto = Proyecto.objects.get(pk=pk)
     
-    type_event = request.GET.get('type', '')
-    
-    if(request.POST):
-        post = request.POST.copy()
-        if 'type' in post:
-            tipo = post['type']
-            if tipo == 'A':
-                form = ActividadForm(request.POST)
-            else:
-                form = HitoForm(request.POST)
-                
-            if form.is_valid():
-                form.save()
-                return redirect('project', pk)
+    if request.POST:
+        form = UploadFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            procesar_archivo(proyecto, request.FILES['file'])
+            
+            proyecto.estado = Proyecto.ASIGNACION
+            proyecto.save()
+            
+            return redirect('roles', pk)
     else:
-        if type_event == 'A':
-            form = ActividadForm(proyecto=proyecto)
-        else:
-            form = HitoForm(initial={'proyecto': proyecto})
+        form = UploadFileForm()
     
-    return render(request, 'gtpros/new_event.html', {'proyecto': proyecto, 'form':form, 'tipo': type_event})
+    return render(request, 'gtpros/import.html', {'proyecto': proyecto, 'form': form, })
+
+def procesar_archivo(proyecto, data):
+
+    deserialized_data = json.load(data)
+    
+    listaPredecesores = []
+    
+    for actividad in deserialized_data["actividades"]:
+        actividad_id = actividad["id"]
+        nom = actividad["nombre"]
+        desc = actividad["descripcion"]
+        dur = actividad["duracion"]
+        modelActividad = Evento(id_evento=actividad_id, proyecto=proyecto, nombre=nom, descripcion=desc, duracion=dur)
+        modelActividad.save()
+        for predecesor in actividad["predecesores"]:
+            evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
+            modelPredecesor = Predecesor(evento=modelActividad, evento_anterior=evento_previo)
+            listaPredecesores.append(modelPredecesor)
+        for rol in actividad["roles"]:
+            tipo = rol["tipo"]
+            cant = rol["cantidad"]
+            for i in range(cant):
+                modelRol = Rol(evento=modelActividad, tipo_rol=tipo)
+                modelRol.save()
+    
+    for hito in deserialized_data["hitos"]:
+        hito_id = hito["id"]
+        nom = hito["nombre"]
+        desc = hito["descripcion"]
+        modelHito = Evento(id_evento=hito_id, proyecto=proyecto, nombre=nom, descripcion=desc)
+        modelHito.save()
+        for predecesor in actividad["predecesores"]:
+            evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
+            modelPredecesor = Predecesor(evento=modelHito, evento_anterior=evento_previo)
+            listaPredecesores.append(modelPredecesor)
+            
+    for predecesor in listaPredecesores:
+        predecesor.save()
+            
+    data.close()
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def roles(request, pk, role=None):
+    proyecto = Proyecto.objects.get(pk=pk)
+    
+    roles_temp = Rol.objects.filter(evento__proyecto=proyecto).order_by('evento')
+    roles = defaultdict(list)
+    
+    for rol in roles_temp:
+        key = rol.evento
+        roles[key].append(rol)
+    
+    if role:
+        rol_to_edit = Rol.objects.get(pk=role)
+        if request.POST:
+            form = RolForm(request.POST, instance=rol_to_edit)
+            
+            save = request.POST['save']
+            if save != '0':
+                logger.debug("SAVE")
+                if form.is_valid():
+                    form.save()
+                    return redirect('roles', pk)
+                else:
+                    return redirect('roles_add', pk, rol)
+            else:
+                logger.debug("DELETE")
+                rol_to_edit.delete()
+                return redirect('roles', pk)
+        else:
+            form = RolForm(instance=rol_to_edit)
+            
+        rol_options = {Rol.ANALISTA : rol_2,
+                   Rol.DISENADOR: rol_3,
+                   Rol.ANALISTA_PROG: rol_3,
+                   Rol.RESPONSABLE_PRUEBAS: rol_3,
+                   Rol.PROGRAMADOR: rol_4,
+                   Rol.PROBADOR: rol_4,
+               } 
+        
+        form.fields["trabajador"].queryset = rol_options[rol.tipo_rol](proyecto)
+    else:
+        form = None
+
+    return render(request, 'gtpros/roles.html', {'proyecto': proyecto, 'form': form, 'roles': dict(roles)})
+
+def rol_2(proyecto):
+    return get_worker_by_category(proyecto, 2) 
+def rol_3(proyecto):
+    return get_worker_by_category(proyecto, 3)
+def rol_4(proyecto):
+    return get_worker_by_category(proyecto, 4)
+
+def get_worker_by_category(proy, cat):
+    jefe = Trabajador.objects.get(cargo__proyecto=proy, cargo__es_jefe=True)
+    trabajadores = Trabajador.objects.filter(categoria__lte=cat, cargo__proyecto=proy).exclude(pk=jefe.pk)
+    
+    return trabajadores
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def actividades(request, pk):
+    proyecto = Proyecto.objects.get(pk=pk)
+    
+    eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user)
+    
+    return render(request, 'gtpros/activities.html', {'proyecto': proyecto, 'eventos': eventos, })
+
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def events(request, pk, type):
+    proyecto = Proyecto.objects.get(pk=pk)
+    
+    eventos = Evento.objects.filter(proyecto=proyecto)
+    
+    return render(request, 'gtpros/activities.html', {'proyecto': proyecto, 'eventos': eventos, })
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -126,7 +211,7 @@ def new_report(request, pk):
     proyecto = Proyecto.objects.get(pk=pk)
     
     user = request.user
-    actividades = Actividad.objects.filter(rol__proyecto__id=pk, rol__trabajador__user=user)
+    actividades = Evento.objects.filter(rol__trabajador__user=user)
     
     if request.POST:
         form = InformeForm(request.POST)
@@ -144,7 +229,7 @@ def new_report(request, pk):
 def reports(request, pk):
     proyecto = Proyecto.objects.get(pk=pk)
     
-    if request.session['rol'] == Rol.JEFE_PROYECTO:
+    if request.session['jefe']:
         informes = Informe.objects.filter(actividad__proyecto=proyecto)
     else:
         informes = Informe.objects.filter(actividad__proyecto=proyecto, actividad__rol__trabajador__user=request.user)
@@ -169,30 +254,10 @@ def validate_report(request, pk):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def events(request, pk, type):
-    proyecto = Proyecto.objects.get(pk=pk)
-    
-    if type == 'A':
-        eventos = Actividad.objects.filter(proyecto=proyecto)
-        next = 'gtpros/activities.html'
-    else:
-        eventos = Hito.objects.filter(proyecto=proyecto)
-        next = 'gtpros/boundary_posts.html'
-    
-    return render(request, next, {'proyecto': proyecto, 'eventos': eventos, })
-
-@login_required
-@user_passes_test(lambda u: not u.is_superuser)    
 def validate_event(request, pk):
     
-    if 'actividad' in request.POST:
-        id = request.POST['actividad']
-        type = 'A'
-        evento = Actividad.objects.get(pk=id)
-    else:
-        id = request.POST['hito']
-        type = 'H'
-        evento = Hito.objects.get(pk=id)
+    id = request.POST['actividad']
+    evento = Evento.objects.get(pk=id)
     
     aceptado = request.POST['validacion']
     if aceptado == "0":
@@ -213,29 +278,39 @@ def summary(request, pk):
         resumen = Resumen.objects.get(proyecto=proyecto)
     except Resumen.DoesNotExist:
         resumen = None
-    
-    if request.POST:
-        form = ResumenForm(request.POST, instance=resumen)
-        if form.is_valid():
-            form.save()
-            return redirect('summary', pk)
             
-    else:
-        if resumen:
-            form = ResumenForm(instance=resumen)
-        else:
-            form = ResumenForm(initial={'proyecto': proyecto})
-            
-    return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'form': form, 'resumen': resumen})
+    return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'resumen': resumen})
 
 def actividad_detalle(request):
     id = request.GET.get('id', '')
-    evento = Actividad.objects.get(pk=id)
+    evento = Evento.objects.get(pk=id)
     
     return render(request, 'gtpros/event_detail.html', {'evento': evento, 'tipo': 'A'})
 
 def hito_detalle(request):
     id = request.GET.get('id', '')
-    evento = Hito.objects.get(pk=id)
+    evento = Evento.objects.get(pk=id)
     
     return render(request, 'gtpros/event_detail.html', {'evento': evento, 'tipo': 'H'})
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def calendar(request, pk):
+    proyecto = Proyecto.objects.get(pk=pk)
+    
+    trabajador = Trabajador.objects.get(user__username=request.user.username)
+    cargo = Cargo.objects.get(proyecto__id=pk, trabajador=trabajador)
+    request.session['jefe'] = cargo.es_jefe
+    
+    if cargo.es_jefe:
+        eventos_temp = list(Evento.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
+    else:
+        eventos_temp = list(Evento.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
+         
+    eventos = json.dumps(eventos_temp, default=date_handler)
+    
+    return render(request, 'gtpros/calendar.html', {'proyecto': proyecto, 'eventos': eventos, })
+
+# Fixes data serialization errors
+def date_handler(obj):
+    return obj.isoformat() if hasattr(obj, 'isoformat') else obj
