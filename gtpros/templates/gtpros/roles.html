@@ -6,7 +6,7 @@
 <div class="row">
 	<div class="col-lg-12 col-md-12">
 		
-		<a class="btn btn-default header-button" href="{% url 'ready' pk=proyecto.id %}">
+		<a class="btn btn-default header-button" href="{% url 'ready' id_proyecto=proyecto.pk %}">
 			<span class="glyphicon glyphicon-ok"></span>
 		</a>
 		<h1 class="page-header">Actividades y sus Roles</h1>
@@ -41,11 +41,11 @@
 								<td>{{ v.trabajador.user.last_name }}</td>
 								<td>{{ v.trabajador.user.username }}</td>
 								{% if v.trabajador != None %}
-									<td class="bg-danger"><a href="{% url 'roles_add' pk=proyecto.id role=v.id %}">
+									<td class="bg-danger"><a href="{% url 'roles_add' id_proyecto=proyecto.pk role=v.pk %}">
 										<div class="text-center"><i class="glyphicon glyphicon-pencil"></i></div>
 									</a></td>
 								{% else %}
-									<td class="bg-danger"><a href="{% url 'roles_add' pk=proyecto.id role=v.id %}">
+									<td class="bg-danger"><a href="{% url 'roles_add' id_proyecto=proyecto.pk role=v.pk %}">
 										<div class="text-center"><i class="glyphicon glyphicon-plus"></i></div>
 									</a></td>
 								{% endif %}

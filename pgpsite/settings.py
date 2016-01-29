@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 import os
 
 from django.utils.translation import ugettext_lazy as _
-
+from os import environ
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -104,17 +104,22 @@ WSGI_APPLICATION = 'pgpsite.wsgi.application'
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-#         'ENGINE': 'django.db.backends.mysql',
-#         'NAME': 'PGP_grupo03',
-#         'USER': 'PGP_grupo03',
-#         'PASSWORD': 'bGQX5QHO',
-#         'HOST': 'jair.lab.inf.uva.es',
-#         'PORT': '',
+    'debug': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+    },
+    'jair': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'PGP_grupo03',
+        'USER': 'PGP_grupo03',
+        'PASSWORD': 'bGQX5QHO',
+        'HOST': 'jair.lab.inf.uva.es',
+        'PORT': '',
     }
 }
+
+default_database = environ.get('PGP_DATABASE', 'jair')
+DATABASES['default'] = DATABASES[default_database]
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.7/topics/i18n/

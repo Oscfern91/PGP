@@ -22,7 +22,7 @@
 			<span class="icon-bar"></span> <span class="icon-bar"></span>
 		</button>
 		{% if proyecto %}
-			<a class="navbar-brand" href="{% url 'project' pk=proyecto.id %}">
+			<a class="navbar-brand" href="{% url 'project' id_proyecto=proyecto.pk %}">
 				<i class="glyphicon glyphicon-calendar"></i>
 				<b>{{ proyecto.nombre }}</b>
 			</a>
@@ -41,7 +41,7 @@
 			<ul class="dropdown-menu dropdown-messages">
 
 				{% for proyecto in request.session.listaProyectos %}
-				<li><a href="{% url 'project' pk=proyecto.id %}">
+				<li><a href="{% url 'project' id_proyecto=proyecto.pk %}">
 						<div>
 							<strong>{{proyecto.nombre}}</strong> <span class="pull-right text-muted">
 								<em>
@@ -84,35 +84,35 @@
 			<ul class="nav" id="side-menu">
 				{% if request.session.jefe %}
 					{% if proyecto.estado == 'N' %}
-						<li><a href="{% url 'cargos' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
+						<li><a href="{% url 'cargos' id_proyecto=proyecto.pk %}"><i class="fa fa-wrench fa-fw"></i>
 								Asignar Trabajadores</a></li>
-						<li><a href="{% url 'importar' pk=proyecto.id %}"><i class="glyphicon glyphicon-plus-sign"></i>
+						<li><a href="{% url 'importar' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-plus-sign"></i>
 								Importar actividades e hitos</a>
 					{% endif %}
 					{% if proyecto.estado == 'A' %}
-						<li><a href="{% url 'roles' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
+						<li><a href="{% url 'roles' id_proyecto=proyecto.pk %}"><i class="fa fa-wrench fa-fw"></i>
 								Asignar Roles a Actividades</a></li>
 					{% endif %}
 					{% if proyecto.estado == 'P' %}
-						<li><a href="{% url 'events' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
+						<li><a href="{% url 'events' id_proyecto=proyecto.pk %}"><i class="fa fa-wrench fa-fw"></i>
 								Ver Actividades e Hitos</a></li>
 					{% endif %}
 					{% if proyecto.estado == 'I' %}
-						<li><a href="{% url 'events' pk=proyecto.id  %}"><i class="glyphicon glyphicon-check"></i>
+						<li><a href="{% url 'events' id_proyecto=proyecto.pk  %}"><i class="glyphicon glyphicon-check"></i>
 								Validar Actividades e Hitos</a>
 					{% endif %}
 				{% else %}
 					{% if proyecto.estado == 'A' or proyecto.estado == 'P' %}
-						<li><a href="{% url 'actividades' pk=proyecto.id %}"><i class="glyphicon glyphicon-check"></i>
+						<li><a href="{% url 'actividades' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-check"></i>
 								Listar Actividades Asignadas</a>
 					{% endif %}
 				{% endif %}
 				{% if proyecto.estado == 'I' %}
-					<li><a href="{% url 'reports' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
+					<li><a href="{% url 'reports' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-eye-open"></i>
 							Informes de Actividad</a></li>
 				{% endif %}
 				{% if proyecto.estado == 'F' %}
-					<li><a href="{% url 'summary' pk=proyecto.id %}"><i class="glyphicon glyphicon-book"></i>
+					<li><a href="{% url 'summary' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-book"></i>
 							Resumen de Proyecto</a></li>
 				{% endif %}
 			</ul>

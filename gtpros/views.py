@@ -41,8 +41,8 @@ def index(request):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def cargos(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def cargos(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     cargos_temp = Cargo.objects.filter(proyecto=proyecto)
     trabajadores = []
@@ -56,7 +56,7 @@ def cargos(request, pk):
         form = CargoForm(request.POST, proyecto=proyecto)
         if form.is_valid():
             form.save()
-            return redirect('cargos', pk)
+            return redirect('cargos', id_proyecto)
     else:
         form = CargoForm(proyecto=proyecto)
         
@@ -64,16 +64,16 @@ def cargos(request, pk):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def delete_worker(request, pk, worker):
+def delete_worker(request, id_proyecto, worker):
     
-    Cargo.objects.get(proyecto=pk, trabajador__pk=worker).delete()
+    Cargo.objects.get(proyecto=id_proyecto, trabajador__pk=worker).delete()
     
-    return redirect('cargos', pk)
+    return redirect('cargos', id_proyecto)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)
-def importar(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def importar(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     if request.POST:
         form = UploadFileForm(request.POST, request.FILES)
@@ -83,7 +83,7 @@ def importar(request, pk):
             proyecto.estado = Proyecto.ASIGNACION
             proyecto.save()
             
-            return redirect('roles', pk)
+            return redirect('roles', id_proyecto)
     else:
         form = UploadFileForm()
     
@@ -131,8 +131,8 @@ def procesar_archivo(proyecto, data):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def roles(request, pk, role=None, ready_error=False):
-    proyecto = Proyecto.objects.get(pk=pk)
+def roles(request, id_proyecto, role=None, ready_error=False):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     roles_temp = Rol.objects.filter(evento__proyecto=proyecto).order_by('evento')
     roles = defaultdict(list)
@@ -151,13 +151,13 @@ def roles(request, pk, role=None, ready_error=False):
                 logger.debug("SAVE")
                 if form.is_valid():
                     form.save()
-                    return redirect('roles', pk)
+                    return redirect('roles', id_proyecto)
                 else:
-                    return redirect('roles_add', pk, rol)
+                    return redirect('roles_add', id_proyecto, rol)
             else:
                 logger.debug("DELETE")
                 rol_to_edit.delete()
-                return redirect('roles', pk)
+                return redirect('roles', id_proyecto)
         else:
             form = RolForm(instance=rol_to_edit)
             
@@ -194,8 +194,8 @@ def get_worker_by_category(proy, cat):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def activities(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def activities(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user)
     
@@ -203,24 +203,24 @@ def activities(request, pk):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def ready(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def ready(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     # Remove roles without assigned workers, and activities without roles
-    roles = Rol.objects.filter(evento__proyecto=pk, trabajador=None)
+    roles = Rol.objects.filter(evento__proyecto=id_proyecto, trabajador=None)
     if roles.count() > 0:
-        return redirect('roles_ready_error', pk, 1)
+        return redirect('roles_ready_error', id_proyecto, 1)
     
     logger.debug("Project Ready!!")
     proyecto.estado = Proyecto.PREPARADO
     proyecto.save()
     
-    return redirect('events', pk)
+    return redirect('events', id_proyecto)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def events(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def events(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     details_link = False
     
     if request.session['jefe']:
@@ -244,8 +244,8 @@ def events(request, pk):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def reports(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def reports(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     if request.session['jefe']:
         informes = Informe.objects.filter(evento__proyecto=proyecto)
@@ -254,8 +254,8 @@ def reports(request, pk):
     
     return render(request, 'gtpros/reports.html', {'proyecto': proyecto, 'informes': informes, })
 
-def event_detail(request, pk, event_id):
-    proyecto = Proyecto.objects.get(pk=pk)
+def event_detail(request, id_proyecto, event_id):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     evento = Evento.objects.get(pk=event_id)
     
     if evento.duracion == 0:
@@ -275,8 +275,8 @@ def event_detail(request, pk, event_id):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def new_report(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def new_report(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     user = request.user
     actividades = Evento.objects.filter(rol__trabajador__user=user)
@@ -285,7 +285,7 @@ def new_report(request, pk):
         form = InformeForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('new_report', pk)
+            return redirect('new_report', id_proyecto)
             
     else:
         form = InformeForm()
@@ -294,7 +294,7 @@ def new_report(request, pk):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def validate_report(request, pk):
+def validate_report(request, id_proyecto):
     
     informeId = request.POST['informe']
     informe = Informe.objects.get(pk=informeId)
@@ -306,11 +306,11 @@ def validate_report(request, pk):
         informe.aceptado = False
     informe.save()
     
-    return redirect('reports', pk)
+    return redirect('reports', id_proyecto)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def validate_event(request, pk):
+def validate_event(request, id_proyecto):
     
     id = request.POST['actividad']
     evento = Evento.objects.get(pk=id)
@@ -323,12 +323,12 @@ def validate_event(request, pk):
         
     evento.save()
     
-    return redirect('events', pk, type)
+    return redirect('events', id_proyecto, )
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def summary(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def summary(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     try:
         resumen = Resumen.objects.get(proyecto=proyecto)
@@ -339,11 +339,11 @@ def summary(request, pk):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def calendar(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
+def calendar(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     trabajador = Trabajador.objects.get(user__username=request.user.username)
-    cargo = Cargo.objects.get(proyecto__id=pk, trabajador=trabajador)
+    cargo = Cargo.objects.get(proyecto__id=id_proyecto, trabajador=trabajador)
     request.session['jefe'] = cargo.es_jefe
     
     if cargo.es_jefe:

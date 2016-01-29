@@ -68,7 +68,7 @@
 								<td>{{ trabajador.user.first_name }}</td>
 								<td>{{ trabajador.user.last_nam }}</td>
 								<td>{{ trabajador.user.username }}</td>
-								<td class="bg-danger"><a href="{% url 'delete_worker' pk=proyecto.id worker=trabajador.pk %}">
+								<td class="bg-danger"><a href="{% url 'delete_worker' id_proyecto=proyecto.pk worker=trabajador.pk %}">
 									<div class="text-center"><i class="glyphicon glyphicon-remove"></i></div>
 								</a></td>
 							</tr>
