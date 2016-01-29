@@ -10,6 +10,8 @@ from gtpros.forms import InformeForm, CargoForm, UploadFileForm, RolForm
 from gtpros.models import Trabajador, Proyecto, Rol, Resumen, Informe, Evento, \
     Cargo, Predecesor
 import json
+from datetime import datetime
+from django.utils import timezone
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -107,7 +109,7 @@ def procesar_archivo(proyecto, data):
         for rol in actividad["roles"]:
             tipo = rol["tipo"]
             cant = rol["cantidad"]
-            for i in range(cant):
+            for i in range(cant):  # @UnusedVariable
                 modelRol = Rol(evento=modelActividad, tipo_rol=tipo)
                 modelRol.save()
     
@@ -129,7 +131,7 @@ def procesar_archivo(proyecto, data):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def roles(request, pk, role=None):
+def roles(request, pk, role=None, ready_error=False):
     proyecto = Proyecto.objects.get(pk=pk)
     
     roles_temp = Rol.objects.filter(evento__proyecto=proyecto).order_by('evento')
@@ -170,8 +172,12 @@ def roles(request, pk, role=None):
         form.fields["trabajador"].queryset = rol_options[rol.tipo_rol](proyecto)
     else:
         form = None
+        
+    if role == False:
+        logger.debug("Error getting Ready...")
+        ready_error = True
 
-    return render(request, 'gtpros/roles.html', {'proyecto': proyecto, 'form': form, 'roles': dict(roles)})
+    return render(request, 'gtpros/roles.html', {'proyecto': proyecto, 'form': form, 'roles': dict(roles), 'ready_error': ready_error})
 
 def rol_2(proyecto):
     return get_worker_by_category(proyecto, 2) 
@@ -188,22 +194,84 @@ def get_worker_by_category(proy, cat):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def actividades(request, pk):
+def activities(request, pk):
     proyecto = Proyecto.objects.get(pk=pk)
     
     eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user)
     
     return render(request, 'gtpros/activities.html', {'proyecto': proyecto, 'eventos': eventos, })
 
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def ready(request, pk):
+    proyecto = Proyecto.objects.get(pk=pk)
+    
+    # Remove roles without assigned workers, and activities without roles
+    roles = Rol.objects.filter(evento__proyecto=pk, trabajador=None)
+    if roles.count() > 0:
+        return redirect('roles_ready_error', pk, 1)
+    
+    logger.debug("Project Ready!!")
+    proyecto.estado = Proyecto.PREPARADO
+    proyecto.save()
+    
+    return redirect('events', pk)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def events(request, pk, type):
+def events(request, pk):
+    proyecto = Proyecto.objects.get(pk=pk)
+    details_link = False
+    
+    if request.session['jefe']:
+        eventos = Evento.objects.filter(proyecto=proyecto)
+    else:
+        eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user)
+    
+    if proyecto.estado == Proyecto.PREPARADO:
+        fechaProyecto = proyecto.fecha_inicio.astimezone(timezone.utc).replace(tzinfo=None)
+        logger.debug("Fecha del proyecto:")
+        logger.debug(fechaProyecto)
+        
+        if fechaProyecto <= datetime.now():
+            proyecto.estado = Proyecto.INICIADO
+            proyecto.save()
+    
+    if proyecto.estado == Proyecto.INICIADO:
+        details_link = True
+        
+    return render(request, 'gtpros/events.html', {'proyecto': proyecto, 'eventos': eventos, 'details_link': details_link, })
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def reports(request, pk):
     proyecto = Proyecto.objects.get(pk=pk)
     
-    eventos = Evento.objects.filter(proyecto=proyecto)
+    if request.session['jefe']:
+        informes = Informe.objects.filter(evento__proyecto=proyecto)
+    else:
+        informes = Informe.objects.filter(evento__proyecto=proyecto, evento__rol__trabajador__user=request.user)
     
-    return render(request, 'gtpros/activities.html', {'proyecto': proyecto, 'eventos': eventos, })
+    return render(request, 'gtpros/reports.html', {'proyecto': proyecto, 'informes': informes, })
+
+def event_detail(request, pk, event_id):
+    proyecto = Proyecto.objects.get(pk=pk)
+    evento = Evento.objects.get(pk=event_id)
+    
+    if evento.duracion == 0:
+        tipo = 'H'
+    else:
+        tipo = 'A'
+        
+    roles_temp = Rol.objects.filter(evento=evento)
+    roles = defaultdict(list)
+    
+    for rol in roles_temp:
+        key = rol.get_tipo_rol_display()
+        roles[key].append(rol)
+    
+    return render(request, 'gtpros/event_detail.html', {'proyecto': proyecto, 'evento': evento, 'tipo': tipo, 'roles': dict(roles), })
+
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -223,18 +291,6 @@ def new_report(request, pk):
         form = InformeForm()
 
     return render(request, 'gtpros/new_report.html', {'proyecto': proyecto, 'form': form, 'actividades': actividades})
-
-@login_required
-@user_passes_test(lambda u: not u.is_superuser)    
-def reports(request, pk):
-    proyecto = Proyecto.objects.get(pk=pk)
-    
-    if request.session['jefe']:
-        informes = Informe.objects.filter(actividad__proyecto=proyecto)
-    else:
-        informes = Informe.objects.filter(actividad__proyecto=proyecto, actividad__rol__trabajador__user=request.user)
-    
-    return render(request, 'gtpros/reports.html', {'proyecto': proyecto, 'informes': informes, })
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -280,18 +336,6 @@ def summary(request, pk):
         resumen = None
             
     return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'resumen': resumen})
-
-def actividad_detalle(request):
-    id = request.GET.get('id', '')
-    evento = Evento.objects.get(pk=id)
-    
-    return render(request, 'gtpros/event_detail.html', {'evento': evento, 'tipo': 'A'})
-
-def hito_detalle(request):
-    id = request.GET.get('id', '')
-    evento = Evento.objects.get(pk=id)
-    
-    return render(request, 'gtpros/event_detail.html', {'evento': evento, 'tipo': 'H'})
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    

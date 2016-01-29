@@ -1,0 +1,8 @@
+{"actividades":[
+	{"id":1,"nombre":"A", "predecesores":[], "duracion":10, "roles":[{"tipo":"PG", "cantidad":2}], "descripcion":"Actividad inicial"},
+	{"id":2,"nombre":"B", "predecesores":[{"id":1}], "duracion":20, "roles":[{"tipo":"AN", "cantidad":1}, {"tipo":"QA", "cantidad":1}], "descripcion":"Actividad secundaria"}
+	],
+"hitos":[
+	{"id":3,"nombre":"Hito1", "predecesores":[{"id":2}], "descripcion":"Actividad inicial"}
+	]
+}

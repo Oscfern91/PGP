@@ -94,11 +94,11 @@
 								Asignar Roles a Actividades</a></li>
 					{% endif %}
 					{% if proyecto.estado == 'P' %}
-						<li><a href="{% url 'roles' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
-								Ver Roles Asignados</a></li>
+						<li><a href="{% url 'events' pk=proyecto.id %}"><i class="fa fa-wrench fa-fw"></i>
+								Ver Actividades e Hitos</a></li>
 					{% endif %}
 					{% if proyecto.estado == 'I' %}
-						<li><a href="{% url 'validar' pk=proyecto.id %}"><i class="glyphicon glyphicon-check"></i>
+						<li><a href="{% url 'events' pk=proyecto.id  %}"><i class="glyphicon glyphicon-check"></i>
 								Validar Actividades e Hitos</a>
 					{% endif %}
 				{% else %}
@@ -108,7 +108,7 @@
 					{% endif %}
 				{% endif %}
 				{% if proyecto.estado == 'I' %}
-					<li><a href="{% url 'informes' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
+					<li><a href="{% url 'reports' pk=proyecto.id %}"><i class="glyphicon glyphicon-eye-open"></i>
 							Informes de Actividad</a></li>
 				{% endif %}
 				{% if proyecto.estado == 'F' %}
