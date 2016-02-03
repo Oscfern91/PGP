@@ -12,13 +12,13 @@ urlpatterns = [
     url(r'^project/(?P<id_proyecto>[0-9]+)/importar/$', views.importar, name='importar'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/delete_worker/(?P<worker>[0-9]+)/$', views.delete_worker, name='delete_worker'),
     
+    url(r'^project/(?P<id_proyecto>[0-9]+)/calendarization/$', views.calendarization, name='calendarization'),
+    
     url(r'^project/(?P<id_proyecto>[0-9]+)/roles/$', views.roles, name='roles'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/roles/(?P<role>[0-9]+)/$', views.roles, name='roles_add'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/roles/ready/(?P<ready_error>[0,1])/$', views.roles, name='roles_ready_error'),
     
-    url(r'^project/(?P<id_proyecto>[0-9]+)/actividades/$', views.activities, name='actividades'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/ready/$', views.ready, name='ready'),
-    
     url(r'^project/(?P<id_proyecto>[0-9]+)/events/$', views.events, name='events'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/event_detail/(?P<event_id>[0-9]+)/$', views.event_detail, name='event_detail'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/reports/$', views.reports, name='reports'),

@@ -1,6 +1,7 @@
 from django import forms
 
-from gtpros.models import Rol, Resumen, Informe, Evento, Cargo, Trabajador
+from gtpros.models import Rol, Resumen, Informe, Evento, Cargo, Trabajador,\
+    Proyecto
 
 import floppyforms
 import logging
@@ -55,3 +56,21 @@ class RolForm(forms.ModelForm):
     class Meta:
         model = Rol
         fields = '__all__'
+
+class ProjectForm(forms.ModelForm):
+    fecha_inicio = floppyforms.DateField()
+    fecha_fin = floppyforms.DateField()
+    
+    def clean(self):
+        super(ProjectForm, self).clean()
+        
+        data = self.cleaned_data
+        if data['fecha_fin'] < data['fecha_inicio']:
+            raise ValidationError(
+                "La fecha de finalizacion debe ser posterior a la de inicio."
+            )
+        return data
+    
+    class Meta:
+        model = Proyecto
+        fields = ('fecha_inicio', 'fecha_fin')

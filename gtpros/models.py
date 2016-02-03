@@ -50,7 +50,7 @@ class Cargo(models.Model):
         unique_together = (("trabajador", "proyecto"),)
     
 class Rol(models.Model):
-    trabajador = models.ForeignKey('Trabajador', blank=True, null=True)
+    trabajador = models.ForeignKey('Trabajador')
     evento = models.ForeignKey('Evento')
     
     ANALISTA = 'AN'
@@ -73,6 +73,7 @@ class Rol(models.Model):
             
     class Meta:
         verbose_name_plural = "Roles"
+        unique_together = (("trabajador", "evento"),)
         
     def __str__(self):
         return ''.join([str(self.trabajador), ' - ', self.get_tipo_rol_display()])
@@ -83,10 +84,11 @@ class Proyecto(models.Model):
     )
     descripcion = models.TextField(max_length=200,
         help_text=_('Un maximo de 200 caracteres.'), blank=True)
-    fecha_inicio = models.DateTimeField()
-    fecha_fin = models.DateTimeField()
+    fecha_inicio = models.DateField(blank=True, null=True)
+    fecha_fin = models.DateField(blank=True, null=True)
     
     NUEVO = 'N'
+    CALENDARIZACION = 'C'
     ASIGNACION = 'A'
     PREPARADO = 'P'
     INICIADO = 'I'
@@ -94,6 +96,7 @@ class Proyecto(models.Model):
     
     ESTADO_OPCIONES = (
         (NUEVO, 'Inicial'),
+        (CALENDARIZACION, 'Calendarización'),
         (ASIGNACION, 'Asignación'),
         (PREPARADO, 'Preparado'),
         (INICIADO, 'Iniciado'),
@@ -122,7 +125,7 @@ class Informe(models.Model):
     descripcion = models.TextField()
     evento = models.ForeignKey('Evento')
     aceptado = models.NullBooleanField(blank=True, null=True)
-    fecha = models.DateTimeField(default=timezone.now)
+    fecha = models.DateField(default=timezone.now)
     
     lunes = models.IntegerField()
     martes = models.IntegerField()
@@ -142,9 +145,10 @@ class Evento(models.Model):
     nombre = models.CharField(max_length = 20)
     descripcion = models.TextField(max_length = 200)
     cerrado = models.BooleanField(default = False)
-    fecha_inicio = models.DateTimeField(null=True)
-    fecha_fin = models.DateTimeField(null=True)
+    fecha_inicio = models.DateField(null=True)
+    fecha_fin = models.DateField(null=True)
     duracion = models.IntegerField(default = 0)
+    tipo_rol = models.CharField(max_length=2, choices=Rol.ROL_OPCIONES, blank=True, null=True)
     
     def validate_date_coherence(self):
         if self.fecha_inicio > self.fecha_fin:

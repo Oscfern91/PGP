@@ -6,7 +6,8 @@ from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.shortcuts import render, redirect
 
-from gtpros.forms import InformeForm, CargoForm, UploadFileForm, RolForm
+from gtpros.forms import InformeForm, CargoForm, UploadFileForm, RolForm,\
+    ProjectForm
 from gtpros.models import Trabajador, Proyecto, Rol, Resumen, Informe, Evento, \
     Cargo, Predecesor
 import json
@@ -22,13 +23,13 @@ def index(request):
     
     try:
         
-        trabajador = Trabajador.objects.get(user__username=request.user.username)
+        trabajador = Trabajador.objects.get(user=request.user)
         proyectos = Proyecto.objects.filter(cargo__trabajador=trabajador)
         
         logger.debug('Proyectos de ' + trabajador.user.username + ':')
         logger.debug(proyectos)
         
-        request.session['listaProyectos'] = list(proyectos)
+        request.session['listaProyectos'] = proyectos
         
         if 'jefe' in request.session:
             del request.session['jefe']
@@ -80,10 +81,10 @@ def importar(request, id_proyecto):
         if form.is_valid():
             procesar_archivo(proyecto, request.FILES['file'])
             
-            proyecto.estado = Proyecto.ASIGNACION
+            proyecto.estado = Proyecto.CALENDARIZACION
             proyecto.save()
             
-            return redirect('roles', id_proyecto)
+            return redirect('calendarization', id_proyecto)
     else:
         form = UploadFileForm()
     
@@ -100,18 +101,13 @@ def procesar_archivo(proyecto, data):
         nom = actividad["nombre"]
         desc = actividad["descripcion"]
         dur = actividad["duracion"]
-        modelActividad = Evento(id_evento=actividad_id, proyecto=proyecto, nombre=nom, descripcion=desc, duracion=dur)
+        rol = actividad["rol"]
+        modelActividad = Evento(id_evento=actividad_id, proyecto=proyecto, nombre=nom, descripcion=desc, duracion=dur, tipo_rol=rol)
         modelActividad.save()
         for predecesor in actividad["predecesores"]:
             evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
             modelPredecesor = Predecesor(evento=modelActividad, evento_anterior=evento_previo)
             listaPredecesores.append(modelPredecesor)
-        for rol in actividad["roles"]:
-            tipo = rol["tipo"]
-            cant = rol["cantidad"]
-            for i in range(cant):  # @UnusedVariable
-                modelRol = Rol(evento=modelActividad, tipo_rol=tipo)
-                modelRol.save()
     
     for hito in deserialized_data["hitos"]:
         hito_id = hito["id"]
@@ -128,6 +124,23 @@ def procesar_archivo(proyecto, data):
         predecesor.save()
             
     data.close()
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def calendarization(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
+    
+    if request.POST:
+        form = ProjectForm(request.POST, instance=proyecto)
+        if form.is_valid():
+            logger.debug("OK")
+            proyecto.estado = Proyecto.ASIGNACION
+            proyecto.save()
+            return redirect('roles', id_proyecto)
+    else:
+        form = ProjectForm(instance=proyecto)
+    
+    return render(request, 'gtpros/calendarization.html', {'proyecto': proyecto, 'form': form, })
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -194,15 +207,6 @@ def get_worker_by_category(proy, cat):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def activities(request, id_proyecto):
-    proyecto = Proyecto.objects.get(pk=id_proyecto)
-    
-    eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user)
-    
-    return render(request, 'gtpros/activities.html', {'proyecto': proyecto, 'eventos': eventos, })
-
-@login_required
-@user_passes_test(lambda u: not u.is_superuser)    
 def ready(request, id_proyecto):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
@@ -213,20 +217,12 @@ def ready(request, id_proyecto):
     
     logger.debug("Project Ready!!")
     proyecto.estado = Proyecto.PREPARADO
+    checkProject(proyecto)
     proyecto.save()
     
     return redirect('events', id_proyecto)
 
-@login_required
-@user_passes_test(lambda u: not u.is_superuser)    
-def events(request, id_proyecto):
-    proyecto = Proyecto.objects.get(pk=id_proyecto)
-    details_link = False
-    
-    if request.session['jefe']:
-        eventos = Evento.objects.filter(proyecto=proyecto)
-    else:
-        eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user)
+def checkProject(proyecto):
     
     if proyecto.estado == Proyecto.PREPARADO:
         fechaProyecto = proyecto.fecha_inicio.astimezone(timezone.utc).replace(tzinfo=None)
@@ -236,6 +232,19 @@ def events(request, id_proyecto):
         if fechaProyecto <= datetime.now():
             proyecto.estado = Proyecto.INICIADO
             proyecto.save()
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)
+def events(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
+    details_link = False
+    
+    if request.session['jefe']:
+        eventos = Evento.objects.filter(proyecto=proyecto)
+    else:
+        eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user)
+    
+    checkProject(proyecto)
     
     if proyecto.estado == Proyecto.INICIADO:
         details_link = True
@@ -341,6 +350,8 @@ def summary(request, id_proyecto):
 @user_passes_test(lambda u: not u.is_superuser)    
 def calendar(request, id_proyecto):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
+    
+    checkProject(proyecto)
     
     trabajador = Trabajador.objects.get(user__username=request.user.username)
     cargo = Cargo.objects.get(proyecto__id=id_proyecto, trabajador=trabajador)

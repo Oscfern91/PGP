@@ -24,7 +24,7 @@ class ProyectoAdmin(admin.ModelAdmin):
     inlines = (CargoInline,)
     
     def get_form(self, request, obj=None, **kwargs):
-        self.exclude = ("estado", )
+        self.exclude = ("estado", "fecha_inicio", "fecha_fin")
         form = super(ProyectoAdmin, self).get_form(request, obj, **kwargs)
         return form
 
