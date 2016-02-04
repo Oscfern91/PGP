@@ -133,7 +133,6 @@ def calendarization(request, id_proyecto):
     if request.POST:
         form = ProjectForm(request.POST, instance=proyecto)
         if form.is_valid():
-            logger.debug("OK")
             proyecto.estado = Proyecto.ASIGNACION
             proyecto.save()
             return redirect('roles', id_proyecto)
@@ -144,15 +143,16 @@ def calendarization(request, id_proyecto):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def roles(request, id_proyecto, role=None, ready_error=False):
+def roles(request, id_proyecto, role=None, event=None, ready_error=False):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
-    roles_temp = Rol.objects.filter(evento__proyecto=proyecto).order_by('evento')
+    actividades = Evento.objects.filter(proyecto=proyecto).exclude(duracion=0)
     roles = defaultdict(list)
     
-    for rol in roles_temp:
-        key = rol.evento
-        roles[key].append(rol)
+    for actividad in actividades:
+        key = actividad
+        roles_temp = Rol.objects.filter(evento=actividad)
+        roles[key].extend(roles_temp)
     
     if role:
         rol_to_edit = Rol.objects.get(pk=role)
@@ -165,8 +165,6 @@ def roles(request, id_proyecto, role=None, ready_error=False):
                 if form.is_valid():
                     form.save()
                     return redirect('roles', id_proyecto)
-                else:
-                    return redirect('roles_add', id_proyecto, rol)
             else:
                 logger.debug("DELETE")
                 rol_to_edit.delete()
@@ -174,23 +172,33 @@ def roles(request, id_proyecto, role=None, ready_error=False):
         else:
             form = RolForm(instance=rol_to_edit)
             
-        rol_options = {Rol.ANALISTA : rol_2,
-                   Rol.DISENADOR: rol_3,
-                   Rol.ANALISTA_PROG: rol_3,
-                   Rol.RESPONSABLE_PRUEBAS: rol_3,
-                   Rol.PROGRAMADOR: rol_4,
-                   Rol.PROBADOR: rol_4,
-               } 
-        
-        form.fields["trabajador"].queryset = rol_options[rol.tipo_rol](proyecto)
     else:
-        form = None
+        if event:
+            event_of_role = Evento.objects.get(pk=event)
+            if request.POST:
+                form = RolForm(request.POST)
+                
+                save = request.POST['save']
+                if save != '0':
+                    logger.debug("SAVE")
+                    if form.is_valid():
+                        form.save()
+                        return redirect('roles', id_proyecto)
+                else:
+                    logger.debug("DELETE")
+                    rol_to_edit.delete()
+                    return redirect('roles', id_proyecto)
+            else:
+                form = RolForm(evento=event_of_role)
+                
+        else:
+            form = None
         
     if role == False:
         logger.debug("Error getting Ready...")
         ready_error = True
 
-    return render(request, 'gtpros/roles.html', {'proyecto': proyecto, 'form': form, 'roles': dict(roles), 'ready_error': ready_error})
+    return render(request, 'gtpros/roles.html', {'proyecto': proyecto, 'form': form, 'actividades': actividades, 'roles': dict(roles), 'ready_error': ready_error})
 
 def rol_2(proyecto):
     return get_worker_by_category(proyecto, 2) 

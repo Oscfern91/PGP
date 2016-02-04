@@ -15,7 +15,8 @@ urlpatterns = [
     url(r'^project/(?P<id_proyecto>[0-9]+)/calendarization/$', views.calendarization, name='calendarization'),
     
     url(r'^project/(?P<id_proyecto>[0-9]+)/roles/$', views.roles, name='roles'),
-    url(r'^project/(?P<id_proyecto>[0-9]+)/roles/(?P<role>[0-9]+)/$', views.roles, name='roles_add'),
+    url(r'^project/(?P<id_proyecto>[0-9]+)/role/(?P<role>[0-9]+)/$', views.roles, name='role_edit'),
+    url(r'^project/(?P<id_proyecto>[0-9]+)/activity/(?P<event>[0-9]+)/new_role/$', views.roles, name='role_add'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/roles/ready/(?P<ready_error>[0,1])/$', views.roles, name='roles_ready_error'),
     
     url(r'^project/(?P<id_proyecto>[0-9]+)/ready/$', views.ready, name='ready'),

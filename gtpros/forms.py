@@ -48,8 +48,16 @@ class UploadFileForm(forms.Form):
 class RolForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
+        if 'evento' in kwargs:
+            evento = kwargs.pop('evento')
+        else:
+            evento = None
         super(RolForm, self).__init__(*args, **kwargs)
         
+        if evento:
+            self.fields['evento'].initial = evento
+            self.fields['tipo_rol'].initial = evento.tipo_rol
+            
         self.fields['evento'].widget = forms.HiddenInput()
         self.fields['tipo_rol'].widget = forms.HiddenInput()
         
