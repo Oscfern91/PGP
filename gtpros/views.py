@@ -11,8 +11,9 @@ from gtpros.forms import InformeForm, CargoForm, UploadFileForm, RolForm,\
 from gtpros.models import Trabajador, Proyecto, Rol, Resumen, Informe, Evento, \
     Cargo, Predecesor
 import json
-from datetime import datetime
-from django.utils import timezone
+from datetime import date
+import datetime
+import math
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -31,8 +32,8 @@ def index(request):
         
         request.session['listaProyectos'] = proyectos
         
-        if 'jefe' in request.session:
-            del request.session['jefe']
+        if 'es_jefe' in request.session:
+            del request.session['es_jefe']
         return render(request, 'gtpros/index.html', {})
     
     except Trabajador.DoesNotExist:
@@ -219,27 +220,85 @@ def ready(request, id_proyecto):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     # Remove roles without assigned workers, and activities without roles
-    roles = Rol.objects.filter(evento__proyecto=id_proyecto, trabajador=None)
-    if roles.count() > 0:
-        return redirect('roles_ready_error', id_proyecto, 1)
+    actividades = Evento.objects.filter(proyecto=proyecto).exclude(duracion=0)
+    for actividad in actividades:
+        roles = Rol.objects.filter(evento=actividad)
+        if roles.count() == 0:
+            return redirect('roles_ready_error', id_proyecto, 1)
     
     logger.debug("Project Ready!!")
     proyecto.estado = Proyecto.PREPARADO
     checkProject(proyecto)
     proyecto.save()
     
+    setEventDates(proyecto)
+    
     return redirect('events', id_proyecto)
 
+# Comprobar fecha inicio del proyecto
 def checkProject(proyecto):
     
     if proyecto.estado == Proyecto.PREPARADO:
-        fechaProyecto = proyecto.fecha_inicio.astimezone(timezone.utc).replace(tzinfo=None)
+        fechaProyecto = proyecto.fecha_inicio
         logger.debug("Fecha del proyecto:")
         logger.debug(fechaProyecto)
         
-        if fechaProyecto <= datetime.now():
+        if fechaProyecto <= date.today():
             proyecto.estado = Proyecto.INICIADO
             proyecto.save()
+
+# Asignar fechas a los eventos
+def setEventDates(proyecto):
+    
+    eventos = Evento.objects.filter(proyecto=proyecto)
+    
+    for evento in eventos:
+        predecesores = Predecesor.objects.filter(evento_anterior=evento.pk)
+        if predecesores.count() == 0:
+            setDate(evento)
+    
+def setDate(evento):
+    
+    logger.debug("Set date:")
+    logger.debug(evento.nombre)
+    predecesores = Predecesor.objects.filter(evento=evento.pk)
+    if predecesores.count() == 0:
+        evento.fecha_inicio = evento.proyecto.fecha_inicio
+    else:
+        for predecesor in predecesores:
+            evento_anterior = predecesor.evento_anterior
+            setDate(evento_anterior)
+            fin_pred = evento_anterior.fecha_fin
+            logger.debug("date preecesor:")
+            logger.debug(fin_pred)
+            if not evento.fecha_inicio or fin_pred > evento.fecha_inicio:
+                if fin_pred.weekday() == 4:
+                    evento.fecha_inicio = fin_pred + datetime.timedelta(days=3)
+                else:
+                    evento.fecha_inicio = fin_pred + datetime.timedelta(days=1)
+                
+    calcularFechaFin(evento)
+    evento.save()
+        
+def calcularFechaFin(evento):
+    
+    num_roles = Rol.objects.filter(evento=evento).count()
+    
+    semanas = evento.duracion / (num_roles * 40)
+    horas_sueltas = evento.duracion % (num_roles * 40)
+    dias_sueltos = math.ceil(horas_sueltas / 8.0)
+    dias = 0
+    
+    dia = evento.fecha_inicio
+    while dia.weekday() < 5 and dias_sueltos > 0:
+        dia = dia + datetime.timedelta(days=1)
+        dias = dias + 1
+        dias_sueltos = dias_sueltos - 1
+    if dias_sueltos > 0:
+        dias + dias_sueltos + 2
+    
+    dias = dias + semanas * 7
+    evento.fecha_fin = evento.fecha_inicio + datetime.timedelta(days=dias)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)
@@ -247,7 +306,10 @@ def events(request, id_proyecto):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     details_link = False
     
-    if request.session['jefe']:
+    if not 'es_jefe' in request.session:
+        return redirect('index')
+    
+    if request.session['es_jefe']:
         eventos = Evento.objects.filter(proyecto=proyecto)
     else:
         eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user)
@@ -264,7 +326,7 @@ def events(request, id_proyecto):
 def reports(request, id_proyecto):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
-    if request.session['jefe']:
+    if request.session['es_jefe']:
         informes = Informe.objects.filter(evento__proyecto=proyecto)
     else:
         informes = Informe.objects.filter(evento__proyecto=proyecto, evento__rol__trabajador__user=request.user)
@@ -288,6 +350,20 @@ def event_detail(request, id_proyecto, event_id):
         roles[key].append(rol)
     
     return render(request, 'gtpros/event_detail.html', {'proyecto': proyecto, 'evento': evento, 'tipo': tipo, 'roles': dict(roles), })
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def validate_event(request, id_proyecto, event_id):
+    
+    evento = Evento.objects.get(pk=event_id)
+    
+    evento.cerrado = True
+    evento.fecha_fin = date.today()
+    evento.save()
+    
+#     Recalcular fechas eventos aqui
+    
+    return redirect('events', id_proyecto, )
 
 
 @login_required
@@ -327,23 +403,6 @@ def validate_report(request, id_proyecto):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def validate_event(request, id_proyecto):
-    
-    id = request.POST['actividad']
-    evento = Evento.objects.get(pk=id)
-    
-    aceptado = request.POST['validacion']
-    if aceptado == "0":
-        evento.cerrado = False
-    else:
-        evento.cerrado = True
-        
-    evento.save()
-    
-    return redirect('events', id_proyecto, )
-
-@login_required
-@user_passes_test(lambda u: not u.is_superuser)    
 def summary(request, id_proyecto):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
@@ -363,7 +422,7 @@ def calendar(request, id_proyecto):
     
     trabajador = Trabajador.objects.get(user__username=request.user.username)
     cargo = Cargo.objects.get(proyecto__id=id_proyecto, trabajador=trabajador)
-    request.session['jefe'] = cargo.es_jefe
+    request.session['es_jefe'] = cargo.es_jefe
     
     if cargo.es_jefe:
         eventos_temp = list(Evento.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))

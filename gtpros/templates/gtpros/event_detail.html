@@ -5,10 +5,15 @@
 
 <div class="row">
 	<div class="col-lg-12">
+		<a class="btn btn-default header-button"
+			data-toggle="tooltip" data-placement="left" title="Finalizar"
+			href="{% url 'validate_event' id_proyecto=proyecto.pk event_id=evento.pk %}"> <span
+			class="glyphicon glyphicon-ok"></span>
+		</a>
 		{% if tipo == 'A' %}
-		<h1 class="page-header">Detalles de la Actividad</h1>
+			<h1 class="page-header">Detalles de la Actividad</h1>
 		{% else %}
-		<h1 class="page-header">Detalles del Hito</h1>
+			<h1 class="page-header">Detalles del Hito</h1>
 		{% endif %}
 	</div>
 	<!-- /.col-lg-12 -->
@@ -19,7 +24,9 @@
 		<div class="col-sm-8">
 			<h2>Nombre: {{evento.nombre}}</h2>
 		</div>
-		<div class="col-sm-3">HOLA</div>
+		{% if tipo == 'A' %}
+			<div class="col-sm-3"><b>Duracion:</b> {{ evento.duracion }}</div>
+		{% endif %}
 	</div>
 	<div class="col-sm-12">
 		<p>Descripción: {{evento.descripcion}}</p>
@@ -62,4 +69,16 @@
 	</div>
 	<!-- /.row -->
 </div>
-{% endfor %} {% endblock content %}
+{% endfor %}
+
+{% endblock content %}
+
+{% block extra_js %}
+{{ block.super }}
+
+<script type="text/javascript">
+	$(function () {
+	  $('[data-toggle="tooltip"]').tooltip()
+	});
+</script>
+{% endblock %}

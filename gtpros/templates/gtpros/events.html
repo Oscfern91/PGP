@@ -61,31 +61,4 @@
 </div>
 {% endfor %}
 
-<div class="modal fade" id="modalForm" tabindex="-1" role="dialog"
-	aria-labelledby="myModalLabel" aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<form method="POST" class="post-form" role="form" action="{% url 'validate_event' id_proyecto=proyecto.pk %}">
-			{%csrf_token %}
-				<!-- Modal Body -->
-				<div class="modal-body">
-					<h2>Dejar Pendiente</h2>
-						Deja pendiente para realizar cambios o finalizar las tareas de la actividad.
-					<h2>Cerrar</h2>
-						Da por concluída la actividad.
-				</div>
-	
-				<!-- Modal Footer -->
-				<div class="modal-footer">
-					<button type="submit" class="btn btn-danger" name="validacion" value="0">
-						Dejar Pendiente</button>
-					<button type="submit" class="btn btn-success" name="validacion" value="1">
-						CERRAR</button>
-				</div>
-				<input type="hidden" name="actividad"/>
-			</form>
-		</div>
-	</div>
-</div>
-
 {% endblock content %}

@@ -82,7 +82,7 @@
 			</div>
 		{% else %}
 			<ul class="nav" id="side-menu">
-				{% if request.session.jefe %}
+				{% if request.session.es_jefe %}
 					{% if proyecto.estado == 'N' %}
 						<li><a href="{% url 'cargos' id_proyecto=proyecto.pk %}"><i class="fa fa-wrench fa-fw"></i>
 								Asignar Trabajadores</a></li>
@@ -108,7 +108,7 @@
 				{% endif %}
 				{% if proyecto.estado == 'I' %}
 					<li><a href="{% url 'events' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-check"></i>
-								Listar Actividades Asignadas</a>
+								Listar Actividades</a>
 					<li><a href="{% url 'reports' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-eye-open"></i>
 							Informes de Actividad</a></li>
 				{% endif %}
