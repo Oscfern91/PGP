@@ -21,7 +21,7 @@
 	<div class="col-lg-10 col-md-10">
 		<div class="panel panel-primary">
 			{% if request.session.rol == 'JP' %}
-				<div class="panel-heading" onclick=openValidateReportModalForm({{ informe.pk }})>
+				<div class="panel-heading" onclick="location.href='{% url 'report_edit' id_proyecto=proyecto.pk id_informe=informe.pk %}'">
 			{% else %}
 				<div class="panel-heading">
 			{% endif %}

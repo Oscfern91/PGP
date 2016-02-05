@@ -1,6 +1,6 @@
 from django import forms
 
-from gtpros.models import Rol, Resumen, Informe, Evento, Cargo, Trabajador,\
+from gtpros.models import Rol, Informe, Cargo, Trabajador, \
     Proyecto
 
 import floppyforms
@@ -20,7 +20,7 @@ class CargoForm(forms.ModelForm):
         
         if proyecto:
             self.fields['proyecto'].initial = proyecto
-            self.fields['trabajador'].queryset = Trabajador.objects.all().exclude(cargo__proyecto = proyecto)
+            self.fields['trabajador'].queryset = Trabajador.objects.all().exclude(cargo__proyecto=proyecto)
         
         self.fields['proyecto'].widget = forms.HiddenInput()
         self.fields['es_jefe'].widget = forms.HiddenInput()
@@ -40,7 +40,7 @@ class InformeForm(forms.ModelForm):
     
     class Meta:
         model = Informe
-        fields = ('descripcion', 'evento', )
+        fields = '__all__'
 
 class UploadFileForm(forms.Form):
     file = forms.FileField(label='Archivo JSON')
@@ -57,6 +57,7 @@ class RolForm(forms.ModelForm):
         if evento:
             self.fields['evento'].initial = evento
             self.fields['tipo_rol'].initial = evento.tipo_rol
+            self.fields['trabajador'].queryset = Trabajador.objects.filter(cargo__proyecto=evento.proyecto, categoria__lte=evento.tipo_rol.min_cat).exclude(cargo__proyecto=evento.proyecto, cargo__es_jefe=True)
             
         self.fields['evento'].widget = forms.HiddenInput()
         self.fields['tipo_rol'].widget = forms.HiddenInput()

@@ -22,8 +22,9 @@ urlpatterns = [
     url(r'^project/(?P<id_proyecto>[0-9]+)/ready/$', views.ready, name='ready'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/events/$', views.events, name='events'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/event_detail/(?P<event_id>[0-9]+)/$', views.event_detail, name='event_detail'),
-    url(r'^project/(?P<id_proyecto>[0-9]+)/reports/$', views.reports, name='reports'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/validate_event/(?P<event_id>[0-9]+)/$', views.validate_event, name='validate_event'),
+    url(r'^project/(?P<id_proyecto>[0-9]+)/reports/$', views.reports, name='reports'),
+    url(r'^project/(?P<id_proyecto>[0-9]+)/reports/(?P<id_informe>[0-9]+)/$', views.reports, name='report_edit'),
     
     
     url(r'^project/(?P<id_proyecto>[0-9]+)/new_report$', views.new_report, name='new_report'),

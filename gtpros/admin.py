@@ -2,9 +2,7 @@ import logging
 
 from django.contrib import admin
 
-from gtpros.models import Trabajador, Proyecto, Cargo
-from django.forms.models import BaseInlineFormSet
-
+from gtpros.models import Trabajador, Proyecto, Cargo, TipoRol
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -30,3 +28,4 @@ class ProyectoAdmin(admin.ModelAdmin):
 
 admin.site.register(Trabajador)
 admin.site.register(Proyecto, ProyectoAdmin)
+admin.site.register(TipoRol)

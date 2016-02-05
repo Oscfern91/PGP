@@ -40,7 +40,7 @@
 						<tbody>
 							{% for v in values %}
 							<tr>
-								<td>{{ v.get_tipo_rol_display }}</td>
+								<td>{{ v.tipo_rol.nombre }}</td>
 								<td>{{ v.trabajador.user.first_name }}</td>
 								<td>{{ v.trabajador.user.last_name }}</td>
 								<td>{{ v.trabajador.user.username }}</td>
@@ -53,7 +53,7 @@
 							</tr>
 							{% endfor %}
 							<tr>
-								<td>{{ key.get_tipo_rol_display }}</td>
+								<td>{{ key.tipo_rol.nombre }}</td>
 								<td></td>
 								<td></td>
 								<td></td>

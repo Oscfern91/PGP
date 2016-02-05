@@ -30,7 +30,7 @@ class Trabajador(models.Model):
 class Cargo(models.Model):
     proyecto = models.ForeignKey('Proyecto')
     trabajador = models.ForeignKey('Trabajador')
-    es_jefe = models.BooleanField(default=True)
+    es_jefe = models.BooleanField(default=True, verbose_name="¿Jefe del Proyecto?")
     
     def validate_unique(self, exclude=None):
         qs = self.__class__.objects.filter(trabajador=self.trabajador)
@@ -48,44 +48,43 @@ class Cargo(models.Model):
             
     class Meta:
         unique_together = (("trabajador", "proyecto"),)
+        
+    def __str__(self):
+        return ''.join([str(self.proyecto), ': ', str(self.trabajador)])
     
 class Rol(models.Model):
     trabajador = models.ForeignKey('Trabajador')
     evento = models.ForeignKey('Evento')
     
-    ANALISTA = 'AN'
-    DISENADOR = 'DI'
-    ANALISTA_PROG = 'AP'
-    RESPONSABLE_PRUEBAS = 'RP'
-    PROGRAMADOR = 'PG'
-    PROBADOR = 'QA'
-    
-    ROL_OPCIONES = (
-        (ANALISTA, 'Analista'),
-        (DISENADOR, 'Diseñador'),
-        (ANALISTA_PROG, 'Analista Programador'),
-        (RESPONSABLE_PRUEBAS, 'Responsable'),
-        (PROGRAMADOR, 'Programador'),
-        (PROBADOR, 'Probador'),
-    )
-    
-    tipo_rol = models.CharField(max_length=2, choices=ROL_OPCIONES)
+    tipo_rol = models.ForeignKey('TipoRol', verbose_name="Tipo de Rol")
             
     class Meta:
         verbose_name_plural = "Roles"
         unique_together = (("trabajador", "evento"),)
         
     def __str__(self):
-        return ''.join([str(self.trabajador), ' - ', self.get_tipo_rol_display()])
+        return ''.join([str(self.trabajador), ' - ', self.tipo_rol.nombre])
+
+class TipoRol(models.Model):
+    nombre = models.CharField(max_length=30, null=False)
+    siglas = models.CharField(max_length=2, null=False, unique=True)
+    min_cat = models.IntegerField(verbose_name="Categoría mínima")
     
+    class Meta:
+        verbose_name_plural = "Tipos de Rol"
+        verbose_name = "Tipo de Rol"
+        
+    def __str__(self):
+        return ''.join([self.nombre, ' - ', str(self.min_cat)])
+
 class Proyecto(models.Model):
-    nombre = models.CharField(max_length=20, null=False,
-        help_text=_('Obligatorio. Maximo 20 caracteres.'),
+    nombre = models.CharField(max_length=30, null=False,
+        help_text=_('Obligatorio. Maximo 30 caracteres.'),
     )
     descripcion = models.TextField(max_length=200,
         help_text=_('Un maximo de 200 caracteres.'), blank=True)
-    fecha_inicio = models.DateField(blank=True, null=True)
-    fecha_fin = models.DateField(blank=True, null=True)
+    fecha_inicio = models.DateField(blank=True, null=True, verbose_name="Fecha inicial")
+    fecha_fin = models.DateField(blank=True, null=True, verbose_name="Fecha final")
     
     NUEVO = 'N'
     CALENDARIZACION = 'C'
@@ -112,7 +111,7 @@ class Proyecto(models.Model):
             )
     
     def __str__(self):
-        return self.nombre
+        return ''.join([self.nombre, ' (', self.get_estado_display(), ')'])
     
 class Resumen(models.Model):
     proyecto = models.OneToOneField('Proyecto', primary_key=True)
@@ -122,16 +121,17 @@ class Resumen(models.Model):
         verbose_name_plural = "Resumenes"
 
 class Informe(models.Model):
-    descripcion = models.TextField()
+    descripcion = models.TextField(blank=True, null=True)
     evento = models.ForeignKey('Evento')
+    rol = models.ForeignKey('Rol')
     aceptado = models.NullBooleanField(blank=True, null=True)
     fecha = models.DateField(default=timezone.now)
     
-    lunes = models.IntegerField()
-    martes = models.IntegerField()
-    miercoles = models.IntegerField()
-    jueves = models.IntegerField()
-    viernes = models.IntegerField()
+    lunes = models.IntegerField(blank=True, null=True)
+    martes = models.IntegerField(blank=True, null=True)
+    miercoles = models.IntegerField(blank=True, null=True)
+    jueves = models.IntegerField(blank=True, null=True)
+    viernes = models.IntegerField(blank=True, null=True)
     
     def aceptar(self):
         self.aceptado = True
@@ -145,10 +145,10 @@ class Evento(models.Model):
     nombre = models.CharField(max_length = 20)
     descripcion = models.TextField(max_length = 200)
     cerrado = models.BooleanField(default = False)
-    fecha_inicio = models.DateField(null=True)
-    fecha_fin = models.DateField(null=True)
-    duracion = models.IntegerField(default = 0)
-    tipo_rol = models.CharField(max_length=2, choices=Rol.ROL_OPCIONES, blank=True, null=True)
+    fecha_inicio = models.DateField(null=True, verbose_name="Fecha inicial")
+    fecha_fin = models.DateField(null=True, verbose_name="Fecha final")
+    duracion = models.IntegerField(default = 0, verbose_name="Duración en horas/hombre")
+    tipo_rol = models.ForeignKey('TipoRol', blank=True, null=True, verbose_name="Tipo de rol requerido")
     
     def validate_date_coherence(self):
         if self.fecha_inicio > self.fecha_fin:
@@ -163,9 +163,15 @@ class Evento(models.Model):
         super(Evento, self).save(*args, **kwargs)
         
     class Meta:
-        unique_together = (("id", "proyecto"),)
+        unique_together = (("id_evento", "proyecto"),)
+        
+    def __str__(self):
+        if self.duracion == 0:
+            return ''.join(['[HITO] ', self.nombre])
+        else:
+            return ''.join(['[ACTIVIDAD] ', self.nombre, ' (', str(self.duracion), ' horas/hombre)'])
         
 class Predecesor(models.Model):
     evento = models.ForeignKey('Evento', related_name='evento')
-    evento_anterior = models.ForeignKey('Evento', related_name='evento_anterior', blank=True, null=True)
+    evento_anterior = models.ForeignKey('Evento', related_name='evento_anterior')
     

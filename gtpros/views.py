@@ -9,7 +9,7 @@ from django.shortcuts import render, redirect
 from gtpros.forms import InformeForm, CargoForm, UploadFileForm, RolForm,\
     ProjectForm
 from gtpros.models import Trabajador, Proyecto, Rol, Resumen, Informe, Evento, \
-    Cargo, Predecesor
+    Cargo, Predecesor, TipoRol
 import json
 from datetime import date
 import datetime
@@ -103,7 +103,8 @@ def procesar_archivo(proyecto, data):
         desc = actividad["descripcion"]
         dur = actividad["duracion"]
         rol = actividad["rol"]
-        modelActividad = Evento(id_evento=actividad_id, proyecto=proyecto, nombre=nom, descripcion=desc, duracion=dur, tipo_rol=rol)
+        tipo_rol = TipoRol.objects.get(siglas=rol)
+        modelActividad = Evento(id_evento=actividad_id, proyecto=proyecto, nombre=nom, descripcion=desc, duracion=dur, tipo_rol=tipo_rol)
         modelActividad.save()
         for predecesor in actividad["predecesores"]:
             evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
@@ -116,7 +117,7 @@ def procesar_archivo(proyecto, data):
         desc = hito["descripcion"]
         modelHito = Evento(id_evento=hito_id, proyecto=proyecto, nombre=nom, descripcion=desc)
         modelHito.save()
-        for predecesor in actividad["predecesores"]:
+        for predecesor in hito["predecesores"]:
             evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
             modelPredecesor = Predecesor(evento=modelHito, evento_anterior=evento_previo)
             listaPredecesores.append(modelPredecesor)
@@ -147,7 +148,7 @@ def calendarization(request, id_proyecto):
 def roles(request, id_proyecto, role=None, event=None, ready_error=False):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
-    actividades = Evento.objects.filter(proyecto=proyecto).exclude(duracion=0)
+    actividades = Evento.objects.filter(proyecto=proyecto).exclude(duracion=0).order_by('id_evento')
     roles = defaultdict(list)
     
     for actividad in actividades:
@@ -171,7 +172,7 @@ def roles(request, id_proyecto, role=None, event=None, ready_error=False):
                 rol_to_edit.delete()
                 return redirect('roles', id_proyecto)
         else:
-            form = RolForm(instance=rol_to_edit)
+            form = RolForm(instance=rol_to_edit, evento=rol_to_edit.evento)
             
     else:
         if event:
@@ -200,19 +201,6 @@ def roles(request, id_proyecto, role=None, event=None, ready_error=False):
         ready_error = True
 
     return render(request, 'gtpros/roles.html', {'proyecto': proyecto, 'form': form, 'actividades': actividades, 'roles': dict(roles), 'ready_error': ready_error})
-
-def rol_2(proyecto):
-    return get_worker_by_category(proyecto, 2) 
-def rol_3(proyecto):
-    return get_worker_by_category(proyecto, 3)
-def rol_4(proyecto):
-    return get_worker_by_category(proyecto, 4)
-
-def get_worker_by_category(proy, cat):
-    jefe = Trabajador.objects.get(cargo__proyecto=proy, cargo__es_jefe=True)
-    trabajadores = Trabajador.objects.filter(categoria__lte=cat, cargo__proyecto=proy).exclude(pk=jefe.pk)
-    
-    return trabajadores
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -259,8 +247,6 @@ def setEventDates(proyecto):
     
 def setDate(evento):
     
-    logger.debug("Set date:")
-    logger.debug(evento.nombre)
     predecesores = Predecesor.objects.filter(evento=evento.pk)
     if predecesores.count() == 0:
         evento.fecha_inicio = evento.proyecto.fecha_inicio
@@ -282,23 +268,41 @@ def setDate(evento):
         
 def calcularFechaFin(evento):
     
-    num_roles = Rol.objects.filter(evento=evento).count()
+    if evento.duracion == 0:
+        evento.fecha_fin = evento.fecha_inicio
+    else:
+        roles = Rol.objects.filter(evento=evento)
+        num_roles = roles.count()
+        
+        semanas = evento.duracion / (num_roles * 40)
+        horas_sueltas = evento.duracion % (num_roles * 40)
+        dias_sueltos = math.ceil(horas_sueltas / 8.0)
+        
+        if dias_sueltos > 0:
+            num_informes = semanas + 1
+        else:
+            num_informes = semanas
+        generarInformes(evento, roles, num_informes)
+        
+        dias = 0
+        dia = evento.fecha_inicio
+        while dia.weekday() < 4 and dias_sueltos > 1:
+            dia = dia + datetime.timedelta(days=1)
+            dias = dias + 1
+            dias_sueltos = dias_sueltos - 1
+        if dias_sueltos > 1:
+            dias + dias_sueltos + 2
+        
+        dias = dias + semanas * 7
+        evento.fecha_fin = evento.fecha_inicio + datetime.timedelta(days=dias)
+
+def generarInformes(evento, roles, num_informes):
     
-    semanas = evento.duracion / (num_roles * 40)
-    horas_sueltas = evento.duracion % (num_roles * 40)
-    dias_sueltos = math.ceil(horas_sueltas / 8.0)
-    dias = 0
-    
-    dia = evento.fecha_inicio
-    while dia.weekday() < 5 and dias_sueltos > 0:
-        dia = dia + datetime.timedelta(days=1)
-        dias = dias + 1
-        dias_sueltos = dias_sueltos - 1
-    if dias_sueltos > 0:
-        dias + dias_sueltos + 2
-    
-    dias = dias + semanas * 7
-    evento.fecha_fin = evento.fecha_inicio + datetime.timedelta(days=dias)
+    for rol in roles:
+        for index in range(num_informes):
+            fecha = evento.fecha_inicio + datetime.timedelta(days=index*7)
+            informe = Informe(evento=evento, rol=rol, fecha=fecha)
+            informe.save()
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)
@@ -310,9 +314,9 @@ def events(request, id_proyecto):
         return redirect('index')
     
     if request.session['es_jefe']:
-        eventos = Evento.objects.filter(proyecto=proyecto)
+        eventos = Evento.objects.filter(proyecto=proyecto).order_by('fecha_inicio')
     else:
-        eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user)
+        eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user).order_by('fecha_inicio')
     
     checkProject(proyecto)
     
@@ -323,15 +327,25 @@ def events(request, id_proyecto):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
-def reports(request, id_proyecto):
+def reports(request, id_proyecto, id_informe=None):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     if request.session['es_jefe']:
-        informes = Informe.objects.filter(evento__proyecto=proyecto)
+        informes = Informe.objects.filter(evento__proyecto=proyecto, fecha__lte=date.today())
     else:
-        informes = Informe.objects.filter(evento__proyecto=proyecto, evento__rol__trabajador__user=request.user)
+        informes = Informe.objects.filter(evento__proyecto=proyecto, evento__rol__trabajador__user=request.user, fecha__lte=date.today())
     
-    return render(request, 'gtpros/reports.html', {'proyecto': proyecto, 'informes': informes, })
+    if id_informe:
+        informe = Informe.objects.get(pk=id_informe)
+        
+        if request.POST:
+            form = InformeForm(request.POST)
+        else:
+            form = InformeForm(instance=informe)
+    else:
+        form = None
+    
+    return render(request, 'gtpros/reports.html', {'proyecto': proyecto, 'informes': informes, 'form': form, })
 
 def event_detail(request, id_proyecto, event_id):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
@@ -346,7 +360,7 @@ def event_detail(request, id_proyecto, event_id):
     roles = defaultdict(list)
     
     for rol in roles_temp:
-        key = rol.get_tipo_rol_display()
+        key = rol.tipo_rol.nombre
         roles[key].append(rol)
     
     return render(request, 'gtpros/event_detail.html', {'proyecto': proyecto, 'evento': evento, 'tipo': tipo, 'roles': dict(roles), })
