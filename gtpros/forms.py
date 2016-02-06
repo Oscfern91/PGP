@@ -31,16 +31,14 @@ class CargoForm(forms.ModelForm):
         fields = ('trabajador', 'proyecto', 'es_jefe')
         
 class InformeForm(forms.ModelForm):
-    descripcion = forms.CharField(label='Informe', widget=forms.Textarea)
     
     def __init__(self, *args, **kwargs):
         super(InformeForm, self).__init__(*args, **kwargs)
-        
-        self.fields['evento'].widget = forms.HiddenInput()
+        self.fields['rol'].widget = forms.HiddenInput()
     
     class Meta:
         model = Informe
-        fields = '__all__'
+        fields = ('lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'descripcion', 'rol')
 
 class UploadFileForm(forms.Form):
     file = forms.FileField(label='Archivo JSON')

@@ -122,10 +122,10 @@ class Resumen(models.Model):
 
 class Informe(models.Model):
     descripcion = models.TextField(blank=True, null=True)
-    evento = models.ForeignKey('Evento')
     rol = models.ForeignKey('Rol')
     aceptado = models.NullBooleanField(blank=True, null=True)
     fecha = models.DateField(default=timezone.now)
+    enviado = models.BooleanField(default=False)
     
     lunes = models.IntegerField(blank=True, null=True)
     martes = models.IntegerField(blank=True, null=True)

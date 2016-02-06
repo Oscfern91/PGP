@@ -43,11 +43,7 @@
 				{% for proyecto in request.session.listaProyectos %}
 				<li><a href="{% url 'project' id_proyecto=proyecto.pk %}">
 						<div>
-							<strong>{{proyecto.nombre}}</strong> <span class="pull-right text-muted">
-								<em>
-								ESTADO: {{ proyecto.get_estado_display }}
-								</em>
-							</span>
+							<strong>{{proyecto.nombre}}</strong>
 						</div>
 						<div>{{proyecto.descripcion}}</div>
 				</a></li>

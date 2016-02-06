@@ -49,11 +49,3 @@ function openNewReportModalForm(actividad) {
 	$('input[name="actividad"]').val(actividad)
 	$('#modalForm').modal('show');
 }
-
-// Shows the modal form for accept or refuse a given report
-function openValidateReportModalForm(id) {
-	$('input[name="informe"]').val(id)
-	$('input[name="actividad"]').val(id)
-	$('input[name="hito"]').val(id)
-	$('#modalForm').modal('show');
-}

@@ -7,7 +7,8 @@ from . import views
 urlpatterns = [
                
     url(r'^$', views.index, name='index'),
-    url(r'^project/(?P<id_proyecto>[0-9]+)/$', views.calendar, name='project'),
+    url(r'^project/(?P<id_proyecto>[0-9]+)/$', views.project, name='project'),
+    url(r'^project/(?P<id_proyecto>[0-9]+)/calendar/$', views.calendar, name='calendar'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/cargos/$', views.cargos, name='cargos'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/importar/$', views.importar, name='importar'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/delete_worker/(?P<worker>[0-9]+)/$', views.delete_worker, name='delete_worker'),
@@ -25,10 +26,9 @@ urlpatterns = [
     url(r'^project/(?P<id_proyecto>[0-9]+)/validate_event/(?P<event_id>[0-9]+)/$', views.validate_event, name='validate_event'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/reports/$', views.reports, name='reports'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/reports/(?P<id_informe>[0-9]+)/$', views.reports, name='report_edit'),
+    url(r'^project/(?P<id_proyecto>[0-9]+)/reports/(?P<id_informe>[0-9]+)/validate_report$', views.validate_report, name='validate_report'),
     
     
-    url(r'^project/(?P<id_proyecto>[0-9]+)/new_report$', views.new_report, name='new_report'),
-    url(r'^project/(?P<id_proyecto>[0-9]+)/validate_report$', views.validate_report, name='validate_report'),
     url(r'^project/(?P<id_proyecto>[0-9]+)/summary$', views.summary, name='summary'),
     
 ]

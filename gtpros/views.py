@@ -27,9 +27,6 @@ def index(request):
         trabajador = Trabajador.objects.get(user=request.user)
         proyectos = Proyecto.objects.filter(cargo__trabajador=trabajador)
         
-        logger.debug('Proyectos de ' + trabajador.user.username + ':')
-        logger.debug(proyectos)
-        
         request.session['listaProyectos'] = proyectos
         
         if 'es_jefe' in request.session:
@@ -40,6 +37,33 @@ def index(request):
         
         logout(request)
         return redirect('index')
+    
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)
+def project(request, id_proyecto):
+    
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
+    
+    checkProject(proyecto)
+    
+    trabajador = Trabajador.objects.get(user__username=request.user.username)
+    cargo = Cargo.objects.get(proyecto__id=id_proyecto, trabajador=trabajador)
+    
+    if 'es_jefe' in request.session:
+            del request.session['es_jefe']
+    request.session['es_jefe'] = cargo.es_jefe
+    
+    if cargo.es_jefe:
+        if proyecto.estado == Proyecto.NUEVO:
+            return redirect('cargos', id_proyecto)
+        if proyecto.estado == Proyecto.CALENDARIZACION:
+            return redirect('calendarization', id_proyecto)
+        if proyecto.estado == Proyecto.ASIGNACION:
+            return redirect('roles', id_proyecto)
+        if proyecto.estado == Proyecto.FINALIZADO:
+            return redirect('', id_proyecto)
+     
+    return redirect('calendar', id_proyecto)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -227,12 +251,21 @@ def ready(request, id_proyecto):
 def checkProject(proyecto):
     
     if proyecto.estado == Proyecto.PREPARADO:
-        fechaProyecto = proyecto.fecha_inicio
-        logger.debug("Fecha del proyecto:")
-        logger.debug(fechaProyecto)
+        fechaIni = proyecto.fecha_inicio
+        logger.debug("Fecha de inicio del proyecto:")
+        logger.debug(fechaIni)
         
-        if fechaProyecto <= date.today():
+        if fechaIni <= date.today():
             proyecto.estado = Proyecto.INICIADO
+            proyecto.save()
+    
+    if proyecto.estado == Proyecto.INICIADO:
+        fechaFin = proyecto.fecha_inicio
+        logger.debug("Fecha de inicio del proyecto:")
+        logger.debug(fechaFin)
+        
+        if fechaFin <= date.today():
+            proyecto.estado = Proyecto.FINALIZADO
             proyecto.save()
 
 # Asignar fechas a los eventos
@@ -301,7 +334,7 @@ def generarInformes(evento, roles, num_informes):
     for rol in roles:
         for index in range(num_informes):
             fecha = evento.fecha_inicio + datetime.timedelta(days=index*7)
-            informe = Informe(evento=evento, rol=rol, fecha=fecha)
+            informe = Informe(rol=rol, fecha=fecha)
             informe.save()
 
 @login_required
@@ -330,22 +363,49 @@ def events(request, id_proyecto):
 def reports(request, id_proyecto, id_informe=None):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
+    form = None
+    informeValid = None
+    
     if request.session['es_jefe']:
-        informes = Informe.objects.filter(evento__proyecto=proyecto, fecha__lte=date.today())
-    else:
-        informes = Informe.objects.filter(evento__proyecto=proyecto, evento__rol__trabajador__user=request.user, fecha__lte=date.today())
-    
-    if id_informe:
-        informe = Informe.objects.get(pk=id_informe)
+        informes = Informe.objects.filter(rol__evento__proyecto=proyecto, fecha__lte=date.today(), enviado=True)
         
-        if request.POST:
-            form = InformeForm(request.POST)
-        else:
-            form = InformeForm(instance=informe)
+        if id_informe:
+            informeValid = Informe.objects.get(pk=id_informe)
+        
     else:
-        form = None
+        informes = Informe.objects.filter(rol__evento__proyecto=proyecto, fecha__lte=date.today(), rol__trabajador__user=request.user).exclude(enviado=True)
     
-    return render(request, 'gtpros/reports.html', {'proyecto': proyecto, 'informes': informes, 'form': form, })
+        if id_informe:
+            informe = Informe.objects.get(pk=id_informe)
+            
+            if request.POST:
+                form = InformeForm(request.POST, instance=informe)
+                if form.is_valid():
+                    formValid = form.save(commit=False)
+                    formValid.enviado = True
+                    formValid.save()
+                    return redirect('reports', id_proyecto)
+            else:
+                form = InformeForm(instance=informe)
+    
+    return render(request, 'gtpros/reports.html', {'proyecto': proyecto, 'informes': informes, 'form': form, 'informeValid': informeValid})
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def validate_report(request, id_proyecto, id_informe):
+    
+    informe = Informe.objects.get(pk=id_informe)
+    
+    aceptado = request.POST['validacion']
+    if aceptado == "0":
+        informe.aceptado = True
+    else:
+        informe.aceptado = False
+        informe.enviado = False
+    
+    informe.save()
+    
+    return redirect('reports', id_proyecto)
 
 def event_detail(request, id_proyecto, event_id):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
@@ -379,41 +439,6 @@ def validate_event(request, id_proyecto, event_id):
     
     return redirect('events', id_proyecto, )
 
-
-@login_required
-@user_passes_test(lambda u: not u.is_superuser)    
-def new_report(request, id_proyecto):
-    proyecto = Proyecto.objects.get(pk=id_proyecto)
-    
-    user = request.user
-    actividades = Evento.objects.filter(rol__trabajador__user=user)
-    
-    if request.POST:
-        form = InformeForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('new_report', id_proyecto)
-            
-    else:
-        form = InformeForm()
-
-    return render(request, 'gtpros/new_report.html', {'proyecto': proyecto, 'form': form, 'actividades': actividades})
-
-@login_required
-@user_passes_test(lambda u: not u.is_superuser)    
-def validate_report(request, id_proyecto):
-    
-    informeId = request.POST['informe']
-    informe = Informe.objects.get(pk=informeId)
-    
-    aceptado = request.POST['validacion']
-    if aceptado == "0":
-        informe.aceptado = True
-    else:
-        informe.aceptado = False
-    informe.save()
-    
-    return redirect('reports', id_proyecto)
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
