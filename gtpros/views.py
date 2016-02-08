@@ -119,8 +119,6 @@ def procesar_archivo(proyecto, data):
 
     deserialized_data = json.load(data)
     
-    listaPredecesores = []
-    
     for actividad in deserialized_data["actividades"]:
         actividad_id = actividad["id"]
         nom = actividad["nombre"]
@@ -130,10 +128,6 @@ def procesar_archivo(proyecto, data):
         tipo_rol = TipoRol.objects.get(siglas=rol)
         modelActividad = Evento(id_evento=actividad_id, proyecto=proyecto, nombre=nom, descripcion=desc, duracion=dur, tipo_rol=tipo_rol)
         modelActividad.save()
-        for predecesor in actividad["predecesores"]:
-            evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
-            modelPredecesor = Predecesor(evento=modelActividad, evento_anterior=evento_previo)
-            listaPredecesores.append(modelPredecesor)
     
     for hito in deserialized_data["hitos"]:
         hito_id = hito["id"]
@@ -141,13 +135,17 @@ def procesar_archivo(proyecto, data):
         desc = hito["descripcion"]
         modelHito = Evento(id_evento=hito_id, proyecto=proyecto, nombre=nom, descripcion=desc)
         modelHito.save()
+            
+    for actividad in deserialized_data["actividades"]:
+        for predecesor in actividad["predecesores"]:
+            evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
+            modelPredecesor = Predecesor(evento=modelActividad, evento_anterior=evento_previo)
+            modelPredecesor.save()
+    for hito in deserialized_data["hitos"]:
         for predecesor in hito["predecesores"]:
             evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
             modelPredecesor = Predecesor(evento=modelHito, evento_anterior=evento_previo)
-            listaPredecesores.append(modelPredecesor)
-            
-    for predecesor in listaPredecesores:
-        predecesor.save()
+            modelPredecesor.save()
             
     data.close()
 
