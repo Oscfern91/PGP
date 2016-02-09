@@ -14,52 +14,53 @@
 	<!-- /.col-lg-12 -->
 </div>
 
-{% if resumen %}
+{% for key, values in roles.items %}
 <div class="row">
 	<div class="col-lg-10 col-md-10">
 		<div class="panel panel-default">
-			{{ resumen.descripcion }}
-		</div>
-	</div>
-</div>
-{% endif %}
-
-{% if request.session.rol == 'JP' %}
-<div class="modal fade" id="modalForm" tabindex="-1" role="dialog"
-	aria-labelledby="myModalLabel" aria-hidden="true">
-	<div class="modal-dialog">
-		<div class="modal-content">
-			<!-- Modal Header -->
-			<div class="modal-header">
-				<button type="button" class="close" data-dismiss="modal">
-					<span aria-hidden="true">&times;</span> <span class="sr-only">Close</span>
-				</button>
-				<h4 class="modal-title" id="myModalLabel">Editar resumen del proyecto: {{ proyecto.nombre }}</h4>
+			{% if key.duracion == 0 %}
+				<div class="panel-heading">HITO "{{ key.nombre }}"</div>
+			{% else %}
+				<div class="panel-heading">ACTIVIDAD "{{ key.nombre }}"</div>
+			{% endif %}
+			<!-- /.panel-heading -->
+			<div class="panel-body">
+			<div style="padding:10px">{{ key.descripcion }}</div>
+				<div class="table-responsive">
+					<table class="table table-striped table-bordered table-hover">
+						<thead>
+							<tr>
+								<th>Fecha Informe</th>
+								<th>L</th>
+								<th>M</th>
+								<th>X</th>
+								<th>J</th>
+								<th>V</th>
+							</tr>
+						</thead>
+						<tbody>
+							{% for v in values %}
+							<tr>
+								<td>{{ v.fecha }}</td>
+								<td>{{ v.lunes }}</td>
+								<td>{{ v.martes }}</td>
+								<td>{{ v.miercoles }}</td>
+								<td>{{ v.jueves }}</td>
+								<td>{{ v.viernes }}</td>
+							</tr>
+							{% endfor %}
+						</tbody>
+					</table>
+				</div>
+				<!-- /.table-responsive -->
 			</div>
-
-			<form method="POST" class="post-form" role="form">
-			{%csrf_token %}
-				<!-- Modal Body -->
-				<div class="modal-body">
-	
-					{% if form.errors %}
-					    <div class="text-danger" id="modal-form-error">Por favor, corrija los siguiente errores.</div>
-				    {% endif %}
-	
-					{{ form.as_p }}
-	
-				</div>
-	
-				<!-- Modal Footer -->
-				<div class="modal-footer">
-					<button type="button" class="btn btn-default" data-dismiss="modal">
-						Cancelar</button>
-					<button type="submit" class="btn btn-primary">Guardar</button>
-				</div>
-			</form>
+			<!-- /.panel-body -->
 		</div>
+		<!-- /.panel -->
 	</div>
+	<!-- /.col-lg-6 -->
 </div>
-{% endif %}
+<!-- /.row -->
+{% endfor %}
 
 {% endblock content %}

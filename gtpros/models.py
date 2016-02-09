@@ -32,20 +32,6 @@ class Cargo(models.Model):
     trabajador = models.ForeignKey('Trabajador')
     es_jefe = models.BooleanField(default=True, verbose_name="¿Jefe del Proyecto?")
     
-    def validate_unique(self, exclude=None):
-        qs = self.__class__.objects.filter(trabajador=self.trabajador)
-        if qs.filter(proyecto=self.proyecto).exists():
-            raise ValidationError('El trabajador ya tiene un cargo asignado en este proyecto.')
-        
-    def validate_boss_duplicate(self):
-        if self.es_jefe != True:
-            return
-        existing = self.__class__.objects.filter(proyecto=self.proyecto).count()
-        if existing > 0:
-            raise ValidationError(
-                "Un mismo proyecto no puede tener más de un Jefe de Proyecto."
-            )
-            
     class Meta:
         unique_together = (("trabajador", "proyecto"),)
         
@@ -68,7 +54,7 @@ class Rol(models.Model):
 class TipoRol(models.Model):
     nombre = models.CharField(max_length=30, null=False)
     siglas = models.CharField(max_length=2, null=False, unique=True)
-    min_cat = models.IntegerField(verbose_name="Categoría mínima")
+    min_cat = models.IntegerField(verbose_name="Categoria minima")
     
     class Meta:
         verbose_name_plural = "Tipos de Rol"
@@ -95,8 +81,8 @@ class Proyecto(models.Model):
     
     ESTADO_OPCIONES = (
         (NUEVO, 'Inicial'),
-        (CALENDARIZACION, 'Calendarización'),
-        (ASIGNACION, 'Asignación'),
+        (CALENDARIZACION, 'Calendarizacion'),
+        (ASIGNACION, 'Asignacion'),
         (PREPARADO, 'Preparado'),
         (INICIADO, 'Iniciado'),
         (FINALIZADO, 'Finalizado')
@@ -107,7 +93,7 @@ class Proyecto(models.Model):
     def validate_date_coherence(self):
         if self.fecha_fin <= self.fecha_inicio:
             raise ValidationError(
-                "La fecha de finalización debe ser posterior a la de inicio."
+                "La fecha de finalizacion debe ser posterior a la de inicio."
             )
     
     def __str__(self):
@@ -127,11 +113,12 @@ class Informe(models.Model):
     fecha = models.DateField(default=timezone.now)
     enviado = models.BooleanField(default=False)
     
-    lunes = models.IntegerField(blank=True, null=True)
-    martes = models.IntegerField(blank=True, null=True)
-    miercoles = models.IntegerField(blank=True, null=True)
-    jueves = models.IntegerField(blank=True, null=True)
-    viernes = models.IntegerField(blank=True, null=True)
+    tarea1 = models.IntegerField(blank=True, null=True)
+    tarea2 = models.IntegerField(blank=True, null=True)
+    tarea3 = models.IntegerField(blank=True, null=True)
+    tarea4 = models.IntegerField(blank=True, null=True)
+    tarea5 = models.IntegerField(blank=True, null=True)
+    tarea6 = models.IntegerField(blank=True, null=True)
     
     def aceptar(self):
         self.aceptado = True

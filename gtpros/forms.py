@@ -38,7 +38,7 @@ class InformeForm(forms.ModelForm):
     
     class Meta:
         model = Informe
-        fields = ('lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'descripcion', 'rol')
+        fields = ('tarea1', 'tarea2', 'tarea3', 'tarea4', 'tarea5', 'tarea6', 'descripcion', 'rol')
 
 class UploadFileForm(forms.Form):
     file = forms.FileField(label='Archivo JSON')
@@ -55,7 +55,8 @@ class RolForm(forms.ModelForm):
         if evento:
             self.fields['evento'].initial = evento
             self.fields['tipo_rol'].initial = evento.tipo_rol
-            self.fields['trabajador'].queryset = Trabajador.objects.filter(cargo__proyecto=evento.proyecto, categoria__lte=evento.tipo_rol.min_cat).exclude(cargo__proyecto=evento.proyecto, cargo__es_jefe=True)
+            jefe = Trabajador.objects.filter(cargo__proyecto=evento.proyecto, cargo__es_jefe=True)
+            self.fields['trabajador'].queryset = Trabajador.objects.filter(cargo__proyecto=evento.proyecto, categoria__lte=evento.tipo_rol.min_cat).exclude(pk=jefe)
             
         self.fields['evento'].widget = forms.HiddenInput()
         self.fields['tipo_rol'].widget = forms.HiddenInput()
@@ -66,18 +67,11 @@ class RolForm(forms.ModelForm):
 
 class ProjectForm(forms.ModelForm):
     fecha_inicio = floppyforms.DateField()
-    fecha_fin = floppyforms.DateField()
     
-    def clean(self):
-        super(ProjectForm, self).clean()
+    def __init__(self, *args, **kwargs):
+        super(ProjectForm, self).__init__(*args, **kwargs)
+        self.fields['fecha_fin'].widget = forms.HiddenInput()
         
-        data = self.cleaned_data
-        if data['fecha_fin'] < data['fecha_inicio']:
-            raise ValidationError(
-                "La fecha de finalizacion debe ser posterior a la de inicio."
-            )
-        return data
-    
     class Meta:
         model = Proyecto
         fields = ('fecha_inicio', 'fecha_fin')

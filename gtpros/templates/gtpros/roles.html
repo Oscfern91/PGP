@@ -106,8 +106,10 @@
 
 				<!-- Modal Footer -->
 				<div class="modal-footer">
-					<button type="submit" class="btn btn-default" name="save" value="0">
-						Eliminar</button>
+					{% if not new %}
+						<button type="submit" class="btn btn-default" name="save" value="0">
+							Eliminar</button>
+					{% endif %}
 					<button type="submit" class="btn btn-primary" name="save" value="1">Guardar</button>
 				</div>
 			</form>

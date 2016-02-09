@@ -14,7 +14,8 @@ class CargoInline(admin.TabularInline):
     
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "trabajador":
-            kwargs["queryset"] = Trabajador.objects.filter(categoria=1).exclude(cargo__es_jefe=True)
+            exclusiones = Trabajador.objects.filter(cargo__es_jefe=True).exclude(cargo__proyecto__estado=Proyecto.FINALIZADO)
+            kwargs["queryset"] = Trabajador.objects.filter(categoria=1).exclude(pk__in=exclusiones)
         return super(CargoInline, self).formfield_for_foreignkey(db_field, request, **kwargs)
     
 class ProyectoAdmin(admin.ModelAdmin):

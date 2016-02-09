@@ -25,7 +25,7 @@ def index(request):
     try:
         
         trabajador = Trabajador.objects.get(user=request.user)
-        proyectos = Proyecto.objects.filter(cargo__trabajador=trabajador)
+        proyectos = Proyecto.objects.filter(cargo__trabajador=trabajador).exclude(estado=Proyecto.FINALIZADO)
         
         request.session['listaProyectos'] = proyectos
         
@@ -61,7 +61,7 @@ def project(request, id_proyecto):
         if proyecto.estado == Proyecto.ASIGNACION:
             return redirect('roles', id_proyecto)
         if proyecto.estado == Proyecto.FINALIZADO:
-            return redirect('', id_proyecto)
+            return redirect('project_summary', id_proyecto)
      
     return redirect('calendar', id_proyecto)
 
@@ -179,6 +179,7 @@ def roles(request, id_proyecto, role=None, event=None, ready_error=False):
         roles[key].extend(roles_temp)
     
     if role:
+        new = False
         rol_to_edit = Rol.objects.get(pk=role)
         if request.POST:
             form = RolForm(request.POST, instance=rol_to_edit)
@@ -197,6 +198,7 @@ def roles(request, id_proyecto, role=None, event=None, ready_error=False):
             form = RolForm(instance=rol_to_edit, evento=rol_to_edit.evento)
             
     else:
+        new = True
         if event:
             event_of_role = Evento.objects.get(pk=event)
             if request.POST:
@@ -222,7 +224,7 @@ def roles(request, id_proyecto, role=None, event=None, ready_error=False):
         logger.debug("Error getting Ready...")
         ready_error = True
 
-    return render(request, 'gtpros/roles.html', {'proyecto': proyecto, 'form': form, 'actividades': actividades, 'roles': dict(roles), 'ready_error': ready_error})
+    return render(request, 'gtpros/roles.html', {'proyecto': proyecto, 'new': new, 'form': form, 'actividades': actividades, 'roles': dict(roles), 'ready_error': ready_error})
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -258,14 +260,10 @@ def checkProject(proyecto):
             proyecto.save()
     
     if proyecto.estado == Proyecto.INICIADO:
-        fechaFin = proyecto.fecha_inicio
+        fechaFin = proyecto.fecha_fin
         logger.debug("Fecha de inicio del proyecto:")
         logger.debug(fechaFin)
         
-        if fechaFin <= date.today():
-            proyecto.estado = Proyecto.FINALIZADO
-            proyecto.save()
-
 # Asignar fechas a los eventos
 def setEventDates(proyecto):
     
@@ -437,18 +435,32 @@ def validate_event(request, id_proyecto, event_id):
     
     return redirect('events', id_proyecto, )
 
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
+def summaries(request):
+    
+    try:
+        proyectos = Proyecto.objects.filter(estado=Proyecto.FINALIZADO)
+    except Resumen.DoesNotExist:
+        proyectos = None
+            
+    return render(request, 'gtpros/summaries.html', {'proyectos': proyectos})
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
 def summary(request, id_proyecto):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
-    try:
-        resumen = Resumen.objects.get(proyecto=proyecto)
-    except Resumen.DoesNotExist:
-        resumen = None
+    listaInformes = defaultdict(list)
+    
+    eventos = Evento.objects.filter(proyecto=proyecto).order_by('proyecto')
+        
+    for evento in eventos:
+        key = evento
+        informes_temp = Informe.objects.filter(rol__evento=evento)
+        listaInformes[key].extend(informes_temp)
             
-    return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'resumen': resumen})
+    return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'informes': listaInformes})
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
