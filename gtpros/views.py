@@ -442,9 +442,9 @@ def preview(request, id_proyecto):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     
     if request.session['es_jefe']:
-        eventos = Evento.objects.filter(proyecto=proyecto)
+        eventos = Evento.objects.filter(proyecto=proyecto, fecha_inicio__lte=date.today())
     else:
-        eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user).order_by('fecha_inicio')
+        eventos = Evento.objects.filter(proyecto=proyecto, fecha_inicio__lte=date.today(), rol__trabajador__user=request.user).order_by('fecha_inicio')
         
     listaInformes = defaultdict(list)
         
