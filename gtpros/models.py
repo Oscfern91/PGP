@@ -113,12 +113,12 @@ class Informe(models.Model):
     fecha = models.DateField(default=timezone.now)
     enviado = models.BooleanField(default=False)
     
-    tarea1 = models.IntegerField(blank=True, null=True)
-    tarea2 = models.IntegerField(blank=True, null=True)
-    tarea3 = models.IntegerField(blank=True, null=True)
-    tarea4 = models.IntegerField(blank=True, null=True)
-    tarea5 = models.IntegerField(blank=True, null=True)
-    tarea6 = models.IntegerField(blank=True, null=True)
+    tarea1 = models.IntegerField(default=0)
+    tarea2 = models.IntegerField(default=0)
+    tarea3 = models.IntegerField(default=0)
+    tarea4 = models.IntegerField(default=0)
+    tarea5 = models.IntegerField(default=0)
+    tarea6 = models.IntegerField(default=0)
     
     def aceptar(self):
         self.aceptado = True

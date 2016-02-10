@@ -145,7 +145,8 @@
 				<div class="modal-body">
 
 				{% if form.errors %}
-					<div class="text-danger" id="modal-form-error">ERROR!</div>
+					<div class="text-danger" id="modal-form-error">Corrija los
+						siguiente errores.</div>
 				{% endif %}
 				
 				{{ form.as_p }}
@@ -184,6 +185,18 @@
 		if (report != 'None' && form == 'None') {
 			$('#validateReportmodalForm').modal('show');
 		}
+		
+		$("input[name*='tarea']").blur(function() {
+			var sum = 0;
+			$("input[name*='tarea']").each(function() {
+				value = parseInt($(this).val());
+				if (!isNaN(value))
+					sum += value;
+			});
+			
+			$("input[name='suma_total']").val(sum);
+		});
+		
 	});
 </script>
 

@@ -32,9 +32,24 @@ class CargoForm(forms.ModelForm):
         
 class InformeForm(forms.ModelForm):
     
+    suma_total = forms.IntegerField()
+    descripcion = forms.CharField(label='Incidencias', widget=forms.Textarea)
+    
     def __init__(self, *args, **kwargs):
         super(InformeForm, self).__init__(*args, **kwargs)
         self.fields['rol'].widget = forms.HiddenInput()
+        
+        for key in self.fields:
+            self.fields[key].required = False
+        
+    def clean(self, commit=True):
+        form_data = self.cleaned_data
+        suma_total = form_data.get('suma_total', None)
+        if suma_total > 40:
+            raise ValidationError(
+                "La suma de horas no puede ser mayor a 40."
+            )
+        return form_data
     
     class Meta:
         model = Informe

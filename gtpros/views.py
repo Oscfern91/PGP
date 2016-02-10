@@ -437,6 +437,26 @@ def validate_event(request, id_proyecto, event_id):
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
+def preview(request, id_proyecto):
+    
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
+    
+    if request.session['es_jefe']:
+        eventos = Evento.objects.filter(proyecto=proyecto)
+    else:
+        eventos = Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user).order_by('fecha_inicio')
+        
+    listaInformes = defaultdict(list)
+        
+    for evento in eventos:
+        key = evento
+        informes_temp = Informe.objects.filter(rol__evento=evento, aceptado=True)
+        listaInformes[key].extend(informes_temp)
+    
+    return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'informes': dict(listaInformes), })
+
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)    
 def summaries(request):
     
     try:
@@ -453,14 +473,14 @@ def summary(request, id_proyecto):
     
     listaInformes = defaultdict(list)
     
-    eventos = Evento.objects.filter(proyecto=proyecto).order_by('proyecto')
+    eventos = Evento.objects.filter(proyecto=proyecto)
         
     for evento in eventos:
         key = evento
         informes_temp = Informe.objects.filter(rol__evento=evento)
         listaInformes[key].extend(informes_temp)
             
-    return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'informes': listaInformes})
+    return render(request, 'gtpros/project_summary.html', {'proyecto': proyecto, 'informes': dict(listaInformes), })
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    

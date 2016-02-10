@@ -14,15 +14,18 @@
 	<!-- /.col-lg-12 -->
 </div>
 
-{% for key, values in roles.items %}
+{% for key, values in informes.items %}
 <div class="row">
 	<div class="col-lg-10 col-md-10">
 		<div class="panel panel-default">
-			{% if key.duracion == 0 %}
-				<div class="panel-heading">HITO "{{ key.nombre }}"</div>
-			{% else %}
-				<div class="panel-heading">ACTIVIDAD "{{ key.nombre }}"</div>
-			{% endif %}
+			<div class="panel-heading">
+				{% if key.duracion == 0 %}
+					HITO "{{ key.nombre }}"
+				{% else %}
+					ACTIVIDAD "{{ key.nombre }}"
+					<div style="float:right">Duración estimada: {{ key.duracion }}</div>
+				{% endif %}
+			</div>
 			<!-- /.panel-heading -->
 			<div class="panel-body">
 			<div style="padding:10px">{{ key.descripcion }}</div>
@@ -31,22 +34,26 @@
 						<thead>
 							<tr>
 								<th>Fecha Informe</th>
-								<th>L</th>
-								<th>M</th>
-								<th>X</th>
-								<th>J</th>
-								<th>V</th>
+								<th>T1</th>
+								<th>T2</th>
+								<th>T3</th>
+								<th>T4</th>
+								<th>T5</th>
+								<th>T6</th>
+								<th>TOTAL</th>
 							</tr>
 						</thead>
 						<tbody>
 							{% for v in values %}
 							<tr>
 								<td>{{ v.fecha }}</td>
-								<td>{{ v.lunes }}</td>
-								<td>{{ v.martes }}</td>
-								<td>{{ v.miercoles }}</td>
-								<td>{{ v.jueves }}</td>
-								<td>{{ v.viernes }}</td>
+								<td>{{ v.tarea1 }}</td>
+								<td>{{ v.tarea2 }}</td>
+								<td>{{ v.tarea3 }}</td>
+								<td>{{ v.tarea4 }}</td>
+								<td>{{ v.tarea5 }}</td>
+								<td>{{ v.tarea6 }}</td>
+								<td>{{ v.tarea1|add:v.tarea2|add:v.tarea3|add:v.tarea4|add:v.tarea5|add:v.tarea6 }}</td>
 							</tr>
 							{% endfor %}
 						</tbody>

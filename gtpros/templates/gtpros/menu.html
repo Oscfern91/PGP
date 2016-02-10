@@ -110,6 +110,8 @@
 								Listar Actividades</a>
 					<li><a href="{% url 'reports' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-eye-open"></i>
 							Informes de Actividad</a></li>
+					<li><a href="{% url 'preview' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-book"></i>
+							Resumen del Proyecto</a></li>
 				{% endif %}
 			</ul>
 		{% endif %}
