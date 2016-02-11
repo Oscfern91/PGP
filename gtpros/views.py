@@ -264,75 +264,6 @@ def checkProject(proyecto):
         logger.debug("Fecha de inicio del proyecto:")
         logger.debug(fechaFin)
         
-# Asignar fechas a los eventos
-def setEventDates(proyecto):
-    
-    eventos = Evento.objects.filter(proyecto=proyecto)
-    
-    for evento in eventos:
-        predecesores = Predecesor.objects.filter(evento_anterior=evento.pk)
-        if predecesores.count() == 0:
-            setDate(evento)
-    
-def setDate(evento):
-    
-    predecesores = Predecesor.objects.filter(evento=evento.pk)
-    if predecesores.count() == 0:
-        evento.fecha_inicio = evento.proyecto.fecha_inicio
-    else:
-        for predecesor in predecesores:
-            evento_anterior = predecesor.evento_anterior
-            setDate(evento_anterior)
-            fin_pred = evento_anterior.fecha_fin
-            logger.debug("date preecesor:")
-            logger.debug(fin_pred)
-            if not evento.fecha_inicio or fin_pred > evento.fecha_inicio:
-                if fin_pred.weekday() == 4:
-                    evento.fecha_inicio = fin_pred + datetime.timedelta(days=3)
-                else:
-                    evento.fecha_inicio = fin_pred + datetime.timedelta(days=1)
-                
-    calcularFechaFin(evento)
-    evento.save()
-        
-def calcularFechaFin(evento):
-    
-    if evento.duracion == 0:
-        evento.fecha_fin = evento.fecha_inicio
-    else:
-        roles = Rol.objects.filter(evento=evento)
-        num_roles = roles.count()
-        
-        semanas = evento.duracion / (num_roles * 40)
-        horas_sueltas = evento.duracion % (num_roles * 40)
-        dias_sueltos = math.ceil(horas_sueltas / 8.0)
-        
-        if dias_sueltos > 0:
-            num_informes = semanas + 1
-        else:
-            num_informes = semanas
-        generarInformes(evento, roles, num_informes)
-        
-        dias = 0
-        dia = evento.fecha_inicio
-        while dia.weekday() < 4 and dias_sueltos > 1:
-            dia = dia + datetime.timedelta(days=1)
-            dias = dias + 1
-            dias_sueltos = dias_sueltos - 1
-        if dias_sueltos > 1:
-            dias + dias_sueltos + 2
-        
-        dias = dias + semanas * 7
-        evento.fecha_fin = evento.fecha_inicio + datetime.timedelta(days=dias)
-
-def generarInformes(evento, roles, num_informes):
-    
-    for rol in roles:
-        for index in range(num_informes):
-            fecha = evento.fecha_inicio + datetime.timedelta(days=index*7)
-            informe = Informe(rol=rol, fecha=fecha)
-            informe.save()
-
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)
 def events(request, id_proyecto):
@@ -363,7 +294,7 @@ def reports(request, id_proyecto, id_informe=None):
     informeValid = None
     
     if request.session['es_jefe']:
-        informes = Informe.objects.filter(rol__evento__proyecto=proyecto, fecha__lte=date.today(), enviado=True)
+        informes = Informe.objects.filter(rol__evento__proyecto=proyecto, fecha__lte=date.today(), enviado=True).exclude(aceptado=True)
         
         if id_informe:
             informeValid = Informe.objects.get(pk=id_informe)
@@ -422,18 +353,44 @@ def event_detail(request, id_proyecto, event_id):
     return render(request, 'gtpros/event_detail.html', {'proyecto': proyecto, 'evento': evento, 'tipo': tipo, 'roles': dict(roles), })
 
 @login_required
+@user_passes_test(lambda u: not u.is_superuser)
+def validate_events(request, id_proyecto):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
+    details_link = False
+    
+    if not 'es_jefe' in request.session:
+        return redirect('index')
+    
+    eventos = Evento.objects.filter(proyecto=proyecto, fecha_inicio__lte=date.today()).exclude(cerrado=True).order_by('fecha_inicio')
+    
+    checkProject(proyecto)
+    
+    if proyecto.estado == Proyecto.INICIADO:
+        details_link = True
+        
+    return render(request, 'gtpros/events.html', {'proyecto': proyecto, 'eventos': eventos, 'details_link': details_link, })
+
+@login_required
 @user_passes_test(lambda u: not u.is_superuser)    
 def validate_event(request, id_proyecto, event_id):
     
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
     evento = Evento.objects.get(pk=event_id)
     
     evento.cerrado = True
-    evento.fecha_fin = date.today()
+    if date.today().weekday() > 4:
+        dias_extra = 7-date.today().weekday()
+        evento.fecha_fin = date.today() + datetime.timedelta(days=dias_extra)
+    else:
+        evento.fecha_fin = date.today()
     evento.save()
     
 #     Recalcular fechas eventos aqui
+    recalcular(evento)
+    if proyecto.estado == Proyecto.FINALIZADO:
+        return redirect('summaries', )
     
-    return redirect('events', id_proyecto, )
+    return redirect('validate_events', id_proyecto, )
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -505,3 +462,105 @@ def calendar(request, id_proyecto):
 # Fixes data serialization errors
 def date_handler(obj):
     return obj.isoformat() if hasattr(obj, 'isoformat') else obj
+
+# Asignar fechas a los eventos
+def setEventDates(proyecto):
+    
+    eventos = Evento.objects.filter(proyecto=proyecto)
+    
+    for evento in eventos:
+        predecesores = Predecesor.objects.filter(evento_anterior=evento.pk)
+        if predecesores.count() == 0:
+            setDate(evento)
+    
+def setDate(evento):
+    
+    predecesores = Predecesor.objects.filter(evento=evento.pk)
+    if predecesores.count() == 0:
+        evento.fecha_inicio = evento.proyecto.fecha_inicio
+    else:
+        for predecesor in predecesores:
+            evento_anterior = predecesor.evento_anterior
+            setDate(evento_anterior)
+            fin_pred = evento_anterior.fecha_fin
+            logger.debug("date preecesor:")
+            logger.debug(fin_pred)
+            if not evento.fecha_inicio or fin_pred > evento.fecha_inicio:
+                if fin_pred.weekday() == 4:
+                    evento.fecha_inicio = fin_pred + datetime.timedelta(days=3)
+                else:
+                    evento.fecha_inicio = fin_pred + datetime.timedelta(days=1)
+                
+    calcularFechaFin(evento)
+    evento.save()
+    
+def recalcular(evento):
+    predecesores = Predecesor.objects.filter(evento_anterior=evento.pk)
+    if predecesores.count() == 0:
+        
+        listaEventos = Evento.objects.filter(proyecto=evento.proyecto)
+        finProyecto = True
+    
+        for item in listaEventos:
+            predecesores = Predecesor.objects.filter(evento_anterior=item.pk)
+            if predecesores.count() == 0:
+                if not item.cerrado:
+                    finProyecto = False
+        
+        if finProyecto:
+            proyecto = evento.proyecto
+            proyecto.fecha_fin = evento.fecha_fin
+            proyecto.estado = Proyecto.FINALIZADO
+            proyecto.save()
+                
+    else:
+        for predecesor in predecesores:
+            evento_siguiente = predecesor.evento
+            
+            fin = evento.fecha_fin
+            if fin.weekday() == 4:
+                evento_siguiente.fecha_inicio = fin + datetime.timedelta(days=3)
+            else:
+                evento_siguiente.fecha_inicio = fin + datetime.timedelta(days=1)
+                
+            calcularFechaFin(evento_siguiente)
+            evento_siguiente.save()
+            recalcular(evento_siguiente)
+        
+def calcularFechaFin(evento):
+    
+    if evento.duracion == 0:
+        evento.fecha_fin = evento.fecha_inicio
+    else:
+        roles = Rol.objects.filter(evento=evento)
+        num_roles = roles.count()
+        
+        semanas = evento.duracion / (num_roles * 40)
+        horas_sueltas = evento.duracion % (num_roles * 40)
+        dias_sueltos = math.ceil(horas_sueltas / 8.0)
+        
+        if dias_sueltos > 0:
+            num_informes = semanas + 1
+        else:
+            num_informes = semanas
+        generarInformes(evento, roles, num_informes)
+        
+        dias = 0
+        dia = evento.fecha_inicio
+        while dia.weekday() < 4 and dias_sueltos > 1:
+            dia = dia + datetime.timedelta(days=1)
+            dias = dias + 1
+            dias_sueltos = dias_sueltos - 1
+        if dias_sueltos > 1:
+            dias + dias_sueltos + 2
+        
+        dias = dias + semanas * 7
+        evento.fecha_fin = evento.fecha_inicio + datetime.timedelta(days=dias)
+
+def generarInformes(evento, roles, num_informes):
+    
+    for rol in roles:
+        for index in range(num_informes):
+            fecha = evento.fecha_inicio + datetime.timedelta(days=index*7)
+            informe = Informe(rol=rol, fecha=fecha)
+            informe.save()

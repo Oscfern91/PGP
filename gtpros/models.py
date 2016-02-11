@@ -22,7 +22,7 @@ class Trabajador(models.Model):
             output = ''.join([self.user.last_name, ', ', self.user.first_name])
         else:
             output = self.user.username
-        return ''.join([output, ' - ', str(self.categoria)])
+        return ''.join([output, ' [CAT. ', str(self.categoria), ']'])
         
     class Meta:
         verbose_name_plural = "Trabajadores"

@@ -33,11 +33,12 @@ class CargoForm(forms.ModelForm):
 class InformeForm(forms.ModelForm):
     
     suma_total = forms.IntegerField()
-    descripcion = forms.CharField(label='Incidencias', widget=forms.Textarea)
+    descripcion = forms.CharField(label='Notas del informe', widget=forms.Textarea(attrs={'placeholder': 'Por ejemplo: La actividad esta lista para finalizar.'}))
     
     def __init__(self, *args, **kwargs):
         super(InformeForm, self).__init__(*args, **kwargs)
         self.fields['rol'].widget = forms.HiddenInput()
+        self.fields['suma_total'].widget.attrs['readonly'] = True
         
         for key in self.fields:
             self.fields[key].required = False

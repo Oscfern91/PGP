@@ -23,7 +23,11 @@
 			<div class="panel-heading" onclick="location.href='{% url 'event_detail' id_proyecto=proyecto.pk event_id=evento.pk %}'">
 				<div class="row">
 					<div class="col-xs-3">
-						<i class="fa fa-book fa-5x"></i>
+						{% if evento.duracion > 0 %}
+							<i class="fa fa-tasks fa-5x"></i>
+						{% else %}
+							<i class="fa fa-flag fa-5x"></i>
+						{% endif %}
 					</div>
 					<div class="col-xs-9 text-right">
 						<div class="huge">{{evento.nombre}}</div>
@@ -47,9 +51,13 @@
 			<div class="collapse" id="{{evento.pk}}">
 				<div class="collapse-description">
 				{% if evento.duracion > 0 %}
-<!-- 					<h3>Fecha Inicio: {{ evento.fecha_inicio }}</h3> -->
-<!-- 					<h3>Fecha Fin: {{ evento.fecha_fin }}</h3> -->
-					<h3>Duración: {{ evento.duracion }}</h3>
+					<h3>Fecha Inicio: {{ evento.fecha_inicio }}</h3>
+					{% if evento.cerrado %}
+						<h3>Fecha Fin: {{ evento.fecha_fin }}</h3>
+					{% else %}
+						<h3>Fecha Fin estimada: {{ evento.fecha_fin }}</h3>
+					{% endif %}
+					<h3>Duración estimada: {{ evento.duracion }}</h3>
 				{% else %}
 					<h3>Fecha de Hito: {{ evento.fecha_fin }}</h3>
 				{% endif %}

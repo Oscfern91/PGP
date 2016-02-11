@@ -97,18 +97,18 @@
 								Asignar Roles a Actividades</a></li>
 					{% endif %}
 					{% if proyecto.estado == 'P' %}
-						<li><a href="{% url 'events' id_proyecto=proyecto.pk %}"><i class="fa fa-wrench fa-fw"></i>
+						<li><a href="{% url 'events' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-eye-open"></i>
 								Ver Actividades e Hitos</a></li>
 					{% endif %}
 					{% if proyecto.estado == 'I' %}
-						<li><a href="{% url 'events' id_proyecto=proyecto.pk  %}"><i class="glyphicon glyphicon-check"></i>
-								Validar Actividades e Hitos</a>
+						<li><a href="{% url 'validate_events' id_proyecto=proyecto.pk  %}"><i class="glyphicon glyphicon-check"></i>
+								Finalizar Actividades e Hitos</a>
 					{% endif %}
 				{% endif %}
 				{% if proyecto.estado == 'I' %}
-					<li><a href="{% url 'events' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-check"></i>
-								Listar Actividades</a>
-					<li><a href="{% url 'reports' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-eye-open"></i>
+					<li><a href="{% url 'events' id_proyecto=proyecto.pk %}"><i class="fa fa-list-ul fa-fw"></i>
+								Listar Eventos</a>
+					<li><a href="{% url 'reports' id_proyecto=proyecto.pk %}"><i class="fa fa-files-o fa-fw"></i>
 							Informes de Actividad</a></li>
 					<li><a href="{% url 'preview' id_proyecto=proyecto.pk %}"><i class="glyphicon glyphicon-book"></i>
 							Resumen del Proyecto</a></li>
