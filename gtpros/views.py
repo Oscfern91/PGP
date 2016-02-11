@@ -310,6 +310,7 @@ def reports(request, id_proyecto, id_informe=None):
                 if form.is_valid():
                     formValid = form.save(commit=False)
                     formValid.enviado = True
+                    formValid.fecha = date.today()
                     formValid.save()
                     return redirect('reports', id_proyecto)
             else:
@@ -334,6 +335,8 @@ def validate_report(request, id_proyecto, id_informe):
     
     return redirect('reports', id_proyecto)
 
+@login_required
+@user_passes_test(lambda u: not u.is_superuser)
 def event_detail(request, id_proyecto, event_id):
     proyecto = Proyecto.objects.get(pk=id_proyecto)
     evento = Evento.objects.get(pk=event_id)
@@ -351,6 +354,24 @@ def event_detail(request, id_proyecto, event_id):
         roles[key].append(rol)
     
     return render(request, 'gtpros/event_detail.html', {'proyecto': proyecto, 'evento': evento, 'tipo': tipo, 'roles': dict(roles), })
+
+def event_popup(request, id_proyecto, event_id):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
+    evento = Evento.objects.get(pk=event_id)
+    
+    if evento.duracion == 0:
+        tipo = 'H'
+    else:
+        tipo = 'A'
+        
+    roles_temp = Rol.objects.filter(evento=evento)
+    roles = defaultdict(list)
+    
+    for rol in roles_temp:
+        key = rol.tipo_rol.nombre
+        roles[key].append(rol)
+    
+    return render(request, 'gtpros/event_popup.html', {'proyecto': proyecto, 'evento': evento, 'tipo': tipo, 'roles': dict(roles), })
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)
@@ -451,9 +472,9 @@ def calendar(request, id_proyecto):
     request.session['es_jefe'] = cargo.es_jefe
     
     if cargo.es_jefe:
-        eventos_temp = list(Evento.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
+        eventos_temp = list(Evento.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'duracion', 'rol__trabajador__user__username'))
     else:
-        eventos_temp = list(Evento.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'rol__trabajador__user__username'))
+        eventos_temp = list(Evento.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'duracion', 'rol__trabajador__user__username'))
          
     eventos = json.dumps(eventos_temp, default=date_handler)
     

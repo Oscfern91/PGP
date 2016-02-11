@@ -23,8 +23,15 @@
 		</button>
 		{% if proyecto %}
 			<a class="navbar-brand" href="{% url 'project' id_proyecto=proyecto.pk %}">
-				<i class="glyphicon glyphicon-calendar"></i>
-				<b>{{ proyecto.nombre }}</b>
+				{% if request.session.es_jefe %}
+					<div class="text-danger"><i class="glyphicon glyphicon-calendar"></i>
+						<b>{{ proyecto.nombre }}</b> &nbsp;<i class="smalltext">(JEFE DE PROYECTO)</i>
+					</div>
+				{% else %}
+					<div class="text-success"><i class="glyphicon glyphicon-calendar"></i>
+						<b>{{ proyecto.nombre }}</b> &nbsp;<i class="smalltext">(DESARROLLADOR)</i>
+					</div>
+				{% endif %}
 			</a>
 			
 		{% else %}

@@ -18,40 +18,27 @@
 
 }(jQuery));
 
-function get_events(actividades, hitos) {
+function get_events(proyecto, eventos) {
 	
 	
 	var jsonEventos = [];
 	
-	if(actividades !== null && actividades.length > 0) {
-		var jsonActividades = JSON.parse(actividades);
-		
-		$.each(jsonActividades, function(index, actividad) {
+	if(eventos !== null && eventos.length > 0) {
+		var jsonActividades = JSON.parse(eventos);
+		$.each(jsonActividades, function(index, evento) {
 			var item = {};
-			item["id"] = actividad.id;
-			item["title"] = actividad.nombre;
-			item["url"] = "/actividad_detalle?id=".concat(actividad.id);
-			item["class"] = "event-warning";
-			var iniDate = new Date(actividad.fecha_inicio);
-			item["start"] = "".concat(iniDate.getTime());
-			var endDate = new Date(actividad.fecha_fin);
-			item["end"] = "".concat(endDate.getTime());
+			item["id"] = evento.id;
+			item["title"] = evento.nombre;
+			item["url"] = "/project/".concat(proyecto).concat("/event_popup/").concat(evento.id);
 			
-			jsonEventos.push(item);
-		});
-	}
-	
-	if(hitos !== null && hitos.length > 0) {
-		var jsonHitos = JSON.parse(hitos);
-		$.each(jsonHitos, function(index, hito) {
-			var item = {};
-			item["id"] = hito.id;
-			item["title"] = hito.nombre;
-			item["url"] = "/hito_detalle?id=".concat(hito.id);
-			item["class"] = "event-info";
-			var date = new Date(hito.fecha);
-			item["start"] = "".concat(date.getTime());
-			item["end"] = "".concat(date.getTime());
+			if(evento.duracion == 0)
+				item["class"] = "event-special";
+			else
+				item["class"] = "event-warning";
+			var iniDate = new Date(evento.fecha_inicio);
+			item["start"] = "".concat(iniDate.getTime());
+			var endDate = new Date(evento.fecha_fin);
+			item["end"] = "".concat(endDate.getTime());
 			
 			jsonEventos.push(item);
 		});
