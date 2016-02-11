@@ -287,8 +287,16 @@ table.dataTable thead .sorting:after {
 	margin: 15px 0;
 }
 
+.bigtext {
+	font-size: 30px;
+}
+
 .huge {
 	font-size: 40px;
+}
+
+.smalltext {
+	font-size: 10px;
 }
 
 .panel-green {

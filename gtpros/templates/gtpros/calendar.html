@@ -72,13 +72,13 @@
 <script type="text/javascript" src="{% static 'js/date.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/app.js' %}"></script>
 <script type="text/javascript">
-	var actividades = "{{actividades|escapejs}}";
-	var hitos = "{{hitos|escapejs}}";
-	
+	var eventos = "{{eventos|escapejs}}";
+	var proyecto = "{{proyecto.pk|escapejs}}";
+
 	var date = new Date().toString('yyyy-MM-dd');
 	
 	var options = {
-		events_source: get_events(actividades, hitos),
+		events_source: get_events(proyecto, eventos),
 		view: 'month',
 		tmpl_path: '{% static "tmpls/" %}',
 		tmpl_cache: false,

@@ -1,0 +1,58 @@
+{% extends 'gtpros/base.html' %}
+
+<!-- Main container -->
+{% block body %}
+
+<div>
+	<div class="col-sm-12">
+		<div class="col-sm-8">
+			<h2>Nombre: {{evento.nombre}}</h2>
+		</div>
+		{% if tipo == 'A' %}
+			<div class="col-sm-3"><b>Duracion:</b> {{ evento.duracion }} horas/hombre</div>
+		{% endif %}
+	</div>
+	<div class="row">
+		<p>Descripción: {{evento.descripcion}}</p>
+	</div>
+
+	{% for key, values in roles.items %}
+	<div class="row">
+		<div class="col-lg-10 col-md-10">
+			<div class="panel panel-default">
+				<div class="panel-heading">{{ key }}</div>
+				<!-- /.panel-heading -->
+				<div class="panel-body">
+					<div class="table-responsive">
+						<table class="table table-striped table-bordered table-hover">
+							<thead>
+								<tr>
+									<th>Nombre</th>
+									<th>Apellidos</th>
+									<th>Nick</th>
+								</tr>
+							</thead>
+							<tbody>
+								{% for v in values %}
+								<tr>
+									<td>{{ v.trabajador.user.first_name }}</td>
+									<td>{{ v.trabajador.user.last_name }}</td>
+									<td>{{ v.trabajador.user.username }}</td>
+								</tr>
+								{% endfor %}
+							</tbody>
+						</table>
+					</div>
+					<!-- /.table-responsive -->
+				</div>
+				<!-- /.panel-body -->
+			</div>
+			<!-- /.panel -->
+		</div>
+		<!-- /.col-lg-6 -->
+	</div>
+	<!-- /.row -->
+</div>
+{% endfor %}
+
+{% endblock body %}
