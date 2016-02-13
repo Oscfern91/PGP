@@ -20,7 +20,7 @@
 <div class="row project">
 	<div class="col-lg-10 col-md-10">
 		<div class="panel panel-primary">
-			 	<div class="panel-heading" onclick="loadUrlInModal('{% url 'event_popup' id_proyecto=proyecto.pk event_id=evento.pk %}')">
+			<div class="panel-heading" onclick="location.href='{% url 'event_detail' id_proyecto=proyecto.pk event_id=evento.pk %}'">
 				<div class="row">
 					<div class="col-xs-3">
 						{% if evento.duracion > 0 %}
@@ -69,32 +69,4 @@
 </div>
 {% endfor %}
 
-<div class="modal fade" id="events-modal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h3>Evento</h3>
-            </div>
-            <div class="modal-body" style="height: 400px">
-            </div>
-            <div class="modal-footer">
-                <a href="#" data-dismiss="modal" class="btn">Cerrar</a>
-            </div>
-        </div>
-    </div>
-</div>
-
 {% endblock content %}
-
-{% block extra_js %}
-{{ block.super }}
-
-<script type="text/javascript">
-function loadUrlInModal(link) {
-    $('#events-modal').find(".modal-body").load(link);
-    $('#events-modal').modal('show');
-}
-</script>
-
-{% endblock %}

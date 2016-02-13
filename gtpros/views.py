@@ -318,6 +318,13 @@ def reports(request, id_proyecto, id_informe=None):
     
     return render(request, 'gtpros/reports.html', {'proyecto': proyecto, 'informes': informes, 'form': form, 'informeValid': informeValid})
 
+def report_popup(request, id_proyecto, report_id):
+    proyecto = Proyecto.objects.get(pk=id_proyecto)
+    
+    informe = Informe.objects.get(pk=report_id)
+    
+    return render(request, 'gtpros/report_popup.html', {'proyecto': proyecto, 'informe': informe })
+
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
 def validate_report(request, id_proyecto, id_informe):
@@ -389,7 +396,7 @@ def validate_events(request, id_proyecto):
     if proyecto.estado == Proyecto.INICIADO:
         details_link = True
         
-    return render(request, 'gtpros/events.html', {'proyecto': proyecto, 'eventos': eventos, 'details_link': details_link, })
+    return render(request, 'gtpros/validate_events.html', {'proyecto': proyecto, 'eventos': eventos, 'details_link': details_link, })
 
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)    
@@ -473,12 +480,15 @@ def calendar(request, id_proyecto):
     
     if cargo.es_jefe:
         eventos_temp = list(Evento.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'duracion', 'rol__trabajador__user__username'))
+        informes_temp = list(Informe.objects.filter(rol__evento__proyecto=proyecto).exclude(aceptado=None).values('id', 'fecha', 'aceptado', 'rol__evento__nombre', 'rol__trabajador__user__username'))
     else:
-        eventos_temp = list(Evento.objects.filter(proyecto=proyecto).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'duracion', 'rol__trabajador__user__username'))
+        eventos_temp = list(Evento.objects.filter(proyecto=proyecto, rol__trabajador__user=request.user).values('id', 'nombre', 'descripcion', 'cerrado', 'fecha_inicio', 'fecha_fin', 'duracion', 'rol__trabajador__user__username'))
+        informes_temp = list(Informe.objects.filter(rol__evento__proyecto=proyecto, rol__trabajador__user=request.user).exclude(aceptado=None).values('id', 'fecha', 'aceptado', 'rol__evento__nombre', 'rol__trabajador__user__username'))
          
     eventos = json.dumps(eventos_temp, default=date_handler)
+    informes = json.dumps(informes_temp, default=date_handler)
     
-    return render(request, 'gtpros/calendar.html', {'proyecto': proyecto, 'eventos': eventos, })
+    return render(request, 'gtpros/calendar.html', {'proyecto': proyecto, 'eventos': eventos, 'informes': informes, })
 
 # Fixes data serialization errors
 def date_handler(obj):

@@ -34,5 +34,6 @@ urlpatterns = [
     url(r'^project/(?P<id_proyecto>[0-9]+)/summary', views.summary, name='project_summary'),
     
     url(r'^project/(?P<id_proyecto>[0-9]+)/event_popup/(?P<event_id>[0-9]+)/$', views.event_popup, name='event_popup'),
+    url(r'^project/(?P<id_proyecto>[0-9]+)/report_popup/(?P<report_id>[0-9]+)/$', views.report_popup, name='report_popup'),
     
 ]

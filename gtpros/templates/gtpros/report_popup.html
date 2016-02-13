@@ -1,0 +1,55 @@
+{% extends 'gtpros/base.html' %}
+
+<!-- Main container -->
+{% block body %}
+
+<div class="row">
+		<div class="col-xs-3">
+			Trabajador: {{ informe.rol.trabajador }}
+		</div>
+		<div class="col-xs-9 text-right">
+			<div class="bigtext">{{informe.fecha}}</div>
+			<div>
+				{% if informe.aceptado == True %}
+					ACEPTADO
+				{% elif informe.aceptado == False %}
+					RECHAZADO
+				{% else %}
+					PENDIENTE 
+				{% endif %}
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="table-responsive">
+	<table class="table table-striped table-bordered table-hover">
+		<thead>
+			<tr>
+				<th>Tarea 1</th>
+				<th>Tarea 2</th>
+				<th>Tarea 3</th>
+				<th>Tarea 4</th>
+				<th>Tarea 5</th>
+				<th>Tarea 6</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>{{ informe.tarea1 }}</td>
+				<td>{{ informe.tarea2 }}</td>
+				<td>{{ informe.tarea3 }}</td>
+				<td>{{ informe.tarea4 }}</td>
+				<td>{{ informe.tarea5 }}</td>
+				<td>{{ informe.tarea6 }}</td>
+			</tr>
+		</tbody>
+	</table>
+</div>
+<!-- /.table-responsive -->
+<div>
+	<h4>Notas del Informe</h4>
+	{{ informe.descripcion }}
+</div>
+
+{% endblock body %}

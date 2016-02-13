@@ -51,7 +51,6 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h3>Evento</h3>
             </div>
             <div class="modal-body" style="height: 400px">
             </div>
@@ -72,13 +71,14 @@
 <script type="text/javascript" src="{% static 'js/date.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/app.js' %}"></script>
 <script type="text/javascript">
-	var eventos = "{{eventos|escapejs}}";
 	var proyecto = "{{proyecto.pk|escapejs}}";
+	var eventos = "{{eventos|escapejs}}";
+	var informes = "{{informes|escapejs}}";
 
 	var date = new Date().toString('yyyy-MM-dd');
 	
 	var options = {
-		events_source: get_events(proyecto, eventos),
+		events_source: get_events(proyecto, eventos, informes),
 		view: 'month',
 		tmpl_path: '{% static "tmpls/" %}',
 		tmpl_cache: false,
