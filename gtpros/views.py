@@ -125,7 +125,7 @@ def procesar_archivo(proyecto, data):
         desc = actividad["descripcion"]
         dur = actividad["duracion"]
         rol = actividad["rol"]
-        tipo_rol = TipoRol.objects.get(siglas=rol)
+        tipo_rol = TipoRol.objects.get(siglas=rol.upper())
         modelActividad = Evento(id_evento=actividad_id, proyecto=proyecto, nombre=nom, descripcion=desc, duracion=dur, tipo_rol=tipo_rol)
         modelActividad.save()
     
@@ -188,12 +188,10 @@ def roles(request, id_proyecto, role=None, event=None, ready_error=False):
             
             save = request.POST['save']
             if save != '0':
-                logger.debug("SAVE")
                 if form.is_valid():
                     form.save()
                     return redirect('roles', id_proyecto)
             else:
-                logger.debug("DELETE")
                 rol_to_edit.delete()
                 return redirect('roles', id_proyecto)
         else:
@@ -208,12 +206,10 @@ def roles(request, id_proyecto, role=None, event=None, ready_error=False):
                 
                 save = request.POST['save']
                 if save != '0':
-                    logger.debug("SAVE")
                     if form.is_valid():
                         form.save()
                         return redirect('roles', id_proyecto)
                 else:
-                    logger.debug("DELETE")
                     rol_to_edit.delete()
                     return redirect('roles', id_proyecto)
             else:
@@ -247,6 +243,9 @@ def ready(request, id_proyecto):
     
     setEventDates(proyecto)
     
+    if not proyecto.informes_generados:
+        generarInformes(proyecto)
+    
     return redirect('events', id_proyecto)
 
 # Comprobar fecha inicio del proyecto
@@ -254,8 +253,6 @@ def checkProject(proyecto):
     
     if proyecto.estado == Proyecto.PREPARADO:
         fechaIni = proyecto.fecha_inicio
-        logger.debug("Fecha de inicio del proyecto:")
-        logger.debug(fechaIni)
         
         if fechaIni <= date.today():
             proyecto.estado = Proyecto.INICIADO
@@ -263,8 +260,6 @@ def checkProject(proyecto):
     
     if proyecto.estado == Proyecto.INICIADO:
         fechaFin = proyecto.fecha_fin
-        logger.debug("Fecha de inicio del proyecto:")
-        logger.debug(fechaFin)
         
 @login_required
 @user_passes_test(lambda u: not u.is_superuser)
@@ -516,8 +511,6 @@ def setDate(evento):
             evento_anterior = predecesor.evento_anterior
             setDate(evento_anterior)
             fin_pred = evento_anterior.fecha_fin
-            logger.debug("date preecesor:")
-            logger.debug(fin_pred)
             if not evento.fecha_inicio or fin_pred > evento.fecha_inicio:
                 if fin_pred.weekday() == 4:
                     evento.fecha_inicio = fin_pred + datetime.timedelta(days=3)
@@ -574,12 +567,6 @@ def calcularFechaFin(evento):
         horas_sueltas = evento.duracion % (num_roles * 40)
         dias_sueltos = math.ceil(horas_sueltas / 8.0)
         
-        if dias_sueltos > 0:
-            num_informes = semanas + 1
-        else:
-            num_informes = semanas
-        generarInformes(evento, roles, num_informes)
-        
         dias = 0
         dia = evento.fecha_inicio
         while dia.weekday() < 4 and dias_sueltos > 1:
@@ -592,10 +579,33 @@ def calcularFechaFin(evento):
         dias = dias + semanas * 7
         evento.fecha_fin = evento.fecha_inicio + datetime.timedelta(days=dias)
 
-def generarInformes(evento, roles, num_informes):
+def generarInformes(proyecto):
     
-    for rol in roles:
-        for index in range(num_informes):
-            fecha = evento.fecha_inicio + datetime.timedelta(days=index*7)
-            informe = Informe(rol=rol, fecha=fecha)
-            informe.save()
+    eventos = Evento.objects.filter(proyecto=proyecto).exclude(duracion=0)
+    
+    for evento in eventos:
+        roles = Rol.objects.filter(evento=evento)
+        num_roles = roles.count()
+        
+        semanas = evento.duracion / (num_roles * 40)
+        horas_sueltas = evento.duracion % (num_roles * 40)
+        dias_sueltos = math.ceil(horas_sueltas / 8.0)
+        
+        if dias_sueltos > 0:
+            num_informes = semanas + 1
+        else:
+            num_informes = semanas
+            
+        logger.debug("Generando informes...")
+        logger.debug(evento.nombre)
+        logger.debug(roles.count())
+        logger.debug(num_informes)
+        for rol in roles:
+            for index in range(num_informes):
+                logger.debug("LOOP:")
+                logger.debug(index)
+                fecha = evento.fecha_inicio + datetime.timedelta(days=index*7)
+                informe = Informe(rol=rol, fecha=fecha)
+                informe.save()
+    
+    proyecto.informes_generados = True
