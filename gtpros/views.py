@@ -139,12 +139,14 @@ def procesar_archivo(proyecto, data):
     for actividad in deserialized_data["actividades"]:
         for predecesor in actividad["predecesores"]:
             evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
-            modelPredecesor = Predecesor(evento=modelActividad, evento_anterior=evento_previo)
+            evento = Evento.objects.get(id_evento=actividad["id"], proyecto=proyecto)
+            modelPredecesor = Predecesor(evento=evento, evento_anterior=evento_previo)
             modelPredecesor.save()
     for hito in deserialized_data["hitos"]:
         for predecesor in hito["predecesores"]:
             evento_previo = Evento.objects.get(id_evento=predecesor["id"], proyecto=proyecto)
-            modelPredecesor = Predecesor(evento=modelHito, evento_anterior=evento_previo)
+            evento = Evento.objects.get(id_evento=hito["id"], proyecto=proyecto)
+            modelPredecesor = Predecesor(evento=evento, evento_anterior=evento_previo)
             modelPredecesor.save()
             
     data.close()

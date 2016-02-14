@@ -27,6 +27,7 @@
 			<!-- /.panel-heading -->
 			<div class="panel-body">
 			<div style="padding:10px">{{ key.descripcion }}</div>
+			<div class="text-info" style="padding:10px">INICIADO EN LA FECHA: {{ key.fecha_inicio }}</div>
 			{% if key.cerrado %}
 				<div class="text-info" style="padding:10px">FINALIZADO EN LA FECHA: {{ key.fecha_fin }}</div>
 			{% endif %}
