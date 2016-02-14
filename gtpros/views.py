@@ -407,8 +407,8 @@ def validate_event(request, id_proyecto, event_id):
     
     evento.cerrado = True
     if date.today().weekday() > 4:
-        dias_extra = 7-date.today().weekday()
-        evento.fecha_fin = date.today() + datetime.timedelta(days=dias_extra)
+        dias_extra = date.today().weekday() - 4
+        evento.fecha_fin = date.today() - datetime.timedelta(days=dias_extra)
     else:
         evento.fecha_fin = date.today()
     evento.save()
@@ -527,6 +527,7 @@ def setDate(evento):
     
 def recalcular(evento):
     predecesores = Predecesor.objects.filter(evento_anterior=evento.pk)
+    
     if predecesores.count() == 0:
         
         listaEventos = Evento.objects.filter(proyecto=evento.proyecto)
@@ -545,6 +546,7 @@ def recalcular(evento):
             proyecto.save()
                 
     else:
+        
         for predecesor in predecesores:
             evento_siguiente = predecesor.evento
             
