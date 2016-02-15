@@ -20,7 +20,8 @@ class CargoForm(forms.ModelForm):
         
         if proyecto:
             self.fields['proyecto'].initial = proyecto
-            self.fields['trabajador'].queryset = Trabajador.objects.all().exclude(cargo__proyecto=proyecto)
+            exclusiones = Trabajador.objects.exclude(cargo__proyecto__estado=Proyecto.FINALIZADO).filter(cargo__es_jefe=True).filter(cargo__es_jefe=False)
+            self.fields['trabajador'].queryset = Trabajador.objects.all().exclude(cargo__proyecto=proyecto).exclude(pk__in=exclusiones)
         
         self.fields['proyecto'].widget = forms.HiddenInput()
         self.fields['es_jefe'].widget = forms.HiddenInput()
