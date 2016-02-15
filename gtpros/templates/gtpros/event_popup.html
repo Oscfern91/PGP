@@ -9,14 +9,13 @@
 			<h2>Nombre: {{evento.nombre}}</h2>
 		</div>
 		{% if tipo == 'A' %}
-			<div class="col-sm-3"><b>Duracion:</b> {{ evento.duracion }} horas/hombre</div>
+			<div class="col-sm-3 pull-right"><b>Duracion:</b> {{ evento.duracion }} horas/hombre</div>
 		{% endif %}
 	</div>
 	<div class="row">
-		<p>Descripción: {{evento.descripcion}}</p>
-		{% if evento.cerrado %}
-			<div class="text-info" style="padding:10px">FINALIZADO EN LA FECHA: {{ evento.fecha_fin }}</div>
-		{% endif %}
+		<div class="col-sm-12">
+			<p>Descripción: {{evento.descripcion}}</p>
+		</div>
 	</div>
 
 	{% for key, values in roles.items %}

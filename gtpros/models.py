@@ -71,6 +71,7 @@ class Proyecto(models.Model):
         help_text=_('Un maximo de 200 caracteres.'), blank=True)
     fecha_inicio = models.DateField(blank=True, null=True, verbose_name="Fecha inicial")
     fecha_fin = models.DateField(blank=True, null=True, verbose_name="Fecha final")
+    informes_generados = models.BooleanField(default=False)
     
     NUEVO = 'N'
     CALENDARIZACION = 'C'
